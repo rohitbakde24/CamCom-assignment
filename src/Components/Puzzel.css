@@ -1,0 +1,95 @@
+.puzzel-section{
+    width: 550px;
+    display: flex;
+    justify-content: center;
+}
+
+.clue-section{
+    min-width: 300px;
+    display: block;
+}
+
+/* @media screen (max-width: 300) {
+    
+} */
+.clue-section-sm{  
+    display: none;
+}
+@media screen and (max-width: 680px) {
+    /* .puzzel-section-sm{
+        background-color: brown;
+    } */
+    .puzzel-section{
+        width:100%;
+    }
+    .clue-section{
+        min-width: 0px;
+        display: none;
+    }
+    .clue-section-sm{  
+        display: block;
+        position: fixed;
+    bottom: 0;
+    left: 0;
+    }
+}
+
+.puzzel-section{
+table, th, td {
+    border: .1px solid rgb(51, 51, 51) !important;
+    border-collapse: collapse !important;
+    /* padding: 0px !important;
+    margin: 0px !important; */
+  }
+
+  input {
+    border: none !important ;
+    background-color: transparent;
+    outline: none !important; /* Optional: Removes the focus outline */
+    color: #000;
+  }
+  input:focus {
+    background-color: #ffda00; /* Changes background on focus */
+  }
+}
+
+.keyboard {
+    
+    width: 100%;
+    background: #e7ebee;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px;
+    justify-content: center;
+  }
+  
+  .key {
+    width: 8%;
+    height: 40px;
+    width: 40px;
+    font-size: 1.2rem;
+    margin: 4px;
+    border: none;
+    border-radius: 5px;
+    background: #ffffff;
+    cursor: pointer;
+    color: #000 !important;
+    padding: 0px;
+  }
+  
+  .key:active {
+    background: #bbb;
+  }
+
+  .clue-text-bg{
+    background-color: #a4dbfb;
+    padding: 7px;
+  }
+
+  .transparent-btn{
+    background: transparent;
+    padding: 0px !important;
+  }
+  .transparent-btn:hover{
+    border: none;
+  }

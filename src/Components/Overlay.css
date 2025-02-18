@@ -1,0 +1,28 @@
+.overlay-root {
+    background: white;
+  }
+  
+  .footer-overlay {
+    position: fixed;
+    bottom: 0px;
+    left: 0;
+    right: 0;
+    background-color: white;
+    height: 300px;
+    animation: overlayMoveUp .5s ease-in;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1500;
+    opacity: 1 !important;
+    border-top: 2px solid rgb(86, 86, 86);
+  }
+  
+  @keyframes overlayMoveUp {
+    from {
+      bottom: -75px;
+    }
+    to {
+      bottom: 0px;
+    }
+  }

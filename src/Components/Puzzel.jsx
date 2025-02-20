@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Puzzel.css";
 import CustomKeyBoard from "./CustomKeyBoard";
-import { arrowBack, arrowNext, SettingIcon, stopIcon } from "../assets/base64";
+import { arrowBack, arrowNext, MoreIcon, SettingIcon, stopIcon } from "../assets/base64";
 import Overlay from "./Overlay";
 
 const crosswordData = {
@@ -47,8 +47,16 @@ const Puzzel = () => {
   const [currentClueIndex, setCurrentClueIndex] = useState(0);
   const inputRefs = useRef({});
 
+  const [selectedRow, setSelectedRow] = useState(null);
   const [time, setTime] = useState(0);
+
+  const resetTimer = () => setTime(0);
+
   const [isRunning, setIsRunning] = useState(true);
+  const [autoCheck, setAutoCheck] = useState(false);
+  const [wrongAnswers, setWrongAnswers] = useState({});
+  const [selectedCol, setSelectedCol] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -67,9 +75,15 @@ const Puzzel = () => {
     const secs = seconds % 60;
 
     if (hrs > 0) {
-      return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+      return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(
+        2,
+        "0"
+      )}:${String(secs).padStart(2, "0")}`;
     } else {
-      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(
+        2,
+        "0"
+      )}`;
     }
   };
 
@@ -88,13 +102,14 @@ const Puzzel = () => {
     }
   }, [focusedClue]);
 
-
   const handleClueClick = (row, col, dir) => {
     setFocusedClue({ row, col });
     setDirection(dir);
   };
 
   const handleCellClick = (row, col) => {
+    setSelectedRow(row);
+    setSelectedCol(col);
     if (!isRunning) {
       return;
     }
@@ -132,7 +147,6 @@ const Puzzel = () => {
     );
   };
 
-  
   useEffect(() => {
     // Focus on the first available input field when the component mounts
     const firstKey = Object.keys(crosswordData.numbers)[0];
@@ -145,90 +159,322 @@ const Puzzel = () => {
     }
   }, []);
 
-  const handleChange = (row, col, e) => {
-    const value = e.target.value.toUpperCase();
-    setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: value }));
+    // const handleChange = (row, col, e) => {
+    //   const value = e.target.value.toUpperCase();
+    //   const correctValue = crosswordData.grid[row][col];
 
-    // Move focus to the next cell
-    let nextRow = row,
-      nextCol = col;
-    if (value) {
-      if (direction === "across") {
-        nextCol += 1;
-      } else {
-        nextRow += 1;
-      }
-    } else {
-      if (direction === "across") {
-        nextCol -= 1;
-      } else {
-        nextRow -= 1;
-      }
-    }
-    const nextKey = `${nextRow}-${nextCol}`;
-    if (inputRefs.current[nextKey]) {
-      inputRefs.current[nextKey].focus();
-    }
-  };
+    //   setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: value }));
 
-  const handleKeyDown = (row, col, e) => {
-    let newRow = row;
-    let newCol = col;
-    switch (e.key) {
-      case "ArrowRight":
-        newCol += 1;
-        break;
-      case "ArrowLeft":
-        newCol -= 1;
-        break;
-      case "ArrowDown":
-        newRow += 1;
-        break;
-      case "ArrowUp":
-        newRow -= 1;
-        break;
-      case "Backspace":
-        if (!e.target.value) {
-          if (direction === "across") {
-            newCol = Math.max(0, col - 1);
+    //   if (autoCheck) {
+    //     setWrongAnswers((prev) => ({
+    //       ...prev,
+    //       [`${row}-${col}`]: value && value !== correctValue ? true : false,
+    //     }));
+    //   }
+    // };
+
+  // const handleKeyDown = (row, col, e) => {
+  //   let newRow = row;
+  //   let newCol = col;
+  //   switch (e.key) {
+  //     case "ArrowRight":
+  //       newCol += 1;
+  //       break;
+  //     case "ArrowLeft":
+  //       newCol -= 1;
+  //       break;
+  //     case "ArrowDown":
+  //       newRow += 1;
+  //       break;
+  //     case "ArrowUp":
+  //       newRow -= 1;
+  //       break;
+  //     case "Backspace":
+  //       if (!e.target.value) {
+  //         if (direction === "across") {
+  //           newCol = Math.max(0, col - 1);
+  //         } else {
+  //           newRow = Math.max(0, row - 1);
+  //         }
+  //       }
+  //       break;
+  //     default:
+  //       return; // Ignore other keys
+  //   }
+
+  //   const newKey = `${newRow}-${newCol}`;
+  //   if (inputRefs.current[newKey]) {
+  //     inputRefs.current[newKey].focus();
+  //   }
+  // };
+
+  // ✅ Check Only Selected Row (Supports Across & Down)
+  const handleCheckSelectedRow = () => {
+    if (selectedRow === null || selectedCol === null) return;
+
+    const updatedWrongAnswers = { ...wrongAnswers };
+
+    crosswordData.grid.forEach((row, rowIndex) => {
+      row.forEach((letter, colIndex) => {
+        const key = `${rowIndex}-${colIndex}`;
+        if (
+          (direction === "across" && rowIndex === selectedRow) ||
+          (direction === "down" && colIndex === selectedCol)
+        ) {
+          if (answers[key] !== letter) {
+            updatedWrongAnswers[key] = true;
           } else {
-            newRow = Math.max(0, row - 1);
+            delete updatedWrongAnswers[key];
           }
         }
-        break;
-      default:
-        return; // Ignore other keys
+      });
+    });
+
+    setWrongAnswers(updatedWrongAnswers);
+  };
+
+  // ✅ Check Whole Puzzle
+  const handleCheckPuzzle = () => {
+    const updatedWrongAnswers = {};
+
+    crosswordData.grid.forEach((row, rowIndex) => {
+      row.forEach((letter, colIndex) => {
+        const key = `${rowIndex}-${colIndex}`;
+        if (answers[key] !== letter) {
+          updatedWrongAnswers[key] = true;
+        }
+      });
+    });
+
+    setWrongAnswers(updatedWrongAnswers);
+  };
+
+  // ✅ Clear Only Selected Row (Supports Across & Down)
+  const handleClearSelectedRow = () => {
+    if (selectedRow === null || selectedCol === null) return;
+
+    const updatedAnswers = { ...answers };
+    const updatedWrongAnswers = { ...wrongAnswers };
+
+    crosswordData.grid.forEach((row, rowIndex) => {
+      row.forEach((_, colIndex) => {
+        const key = `${rowIndex}-${colIndex}`;
+        if (
+          (direction === "across" && rowIndex === selectedRow) ||
+          (direction === "down" && colIndex === selectedCol)
+        ) {
+          delete updatedAnswers[key];
+          delete updatedWrongAnswers[key];
+        }
+      });
+    });
+
+    setAnswers(updatedAnswers);
+    setWrongAnswers(updatedWrongAnswers);
+  };
+
+  // ✅ Clear Entire Puzzle
+  const handleClearPuzzle = () => {
+    setAnswers({});
+    setWrongAnswers({});
+  };
+
+  const handleRestart = () => {
+    setAnswers({});
+    setWrongAnswers({});
+    resetTimer();
+  };
+
+  const handleRevealWholePuzzle = () => {
+    const updatedAnswers = {};
+
+    crosswordData.grid.forEach((row, rowIndex) => {
+      row.forEach((letter, colIndex) => {
+        const key = `${rowIndex}-${colIndex}`;
+        updatedAnswers[key] = letter; // Fill correct letter
+      });
+    });
+
+    setAnswers(updatedAnswers);
+    setWrongAnswers({});
+  };
+
+  const handleRevealSelectedRow = () => {
+    if (selectedRow === null || selectedCol === null) return;
+
+    const updatedAnswers = { ...answers };
+    const updatedWrongAnswers = { ...wrongAnswers };
+
+    crosswordData.grid.forEach((row, rowIndex) => {
+      row.forEach((letter, colIndex) => {
+        const key = `${rowIndex}-${colIndex}`;
+        if (
+          (direction === "across" && rowIndex === selectedRow) ||
+          (direction === "down" && colIndex === selectedCol)
+        ) {
+          updatedAnswers[key] = letter; // Fill correct letter
+          delete updatedWrongAnswers[key]; // Remove wrong marking
+        }
+      });
+    });
+
+    setAnswers(updatedAnswers);
+    setWrongAnswers(updatedWrongAnswers);
+  };
+
+
+  const handleChange = (row, col, e) => {
+    debugger
+    const value = e.target.value.toUpperCase();
+    
+  
+    setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: value }));
+  
+    if (autoCheck) {
+      autoCheckOnValueChange(row, col, value);
     }
   
-    const newKey = `${newRow}-${newCol}`;
-    if (inputRefs.current[newKey]) {
-      inputRefs.current[newKey].focus();
+    if (value) {
+      moveToNextCell(row, col);
     }
   };
+
+  const autoCheckOnValueChange = (row, col, value) =>{
+    const correctValue = crosswordData.grid[row][col];
+    setWrongAnswers((prev) => ({
+      ...prev,
+      [`${row}-${col}`]: value && value !== correctValue ? true : false,
+    }));
+  }
+  
+  // Handle backspace or clear input
+  const handleKeyDown = (row, col, e) => {
+    if (e.key === "Backspace" && !answers[`${row}-${col}`]) {
+      moveToPreviousCell(row, col);
+    }
+  };
+  
+  
+  const moveToNextCell = (row, col) => {
+  let nextRow = row;
+  let nextCol = col;
+
+  if (direction === "across") {
+    nextCol++; // Move right
+  } else if (direction === "down") {
+    nextRow++; // Move down
+  }
+
+  // Move to the next valid (non-null) cell
+  while (nextRow < crosswordData.grid.length && nextCol < crosswordData.grid[nextRow].length) {
+    if (crosswordData.grid[nextRow][nextCol] !== null) {
+      setFocusedClue({ row: nextRow, col: nextCol });
+      inputRefs.current[`${nextRow}-${nextCol}`]?.focus();
+      return;
+    }
+
+    // Skip black cells and move accordingly
+    if (direction === "across") {
+      nextCol++;
+      if (nextCol >= crosswordData.grid[row].length) {
+        nextRow++; // Move to the next row
+        nextCol = 0;
+      }
+    } else if (direction === "down") {
+      nextRow++;
+      if (nextRow >= crosswordData.grid.length) {
+        return; // Stop at the last row
+      }
+    }
+  }
+};
+
+const moveToPreviousCell = (row, col) => {
+  let prevRow = row;
+  let prevCol = col;
+
+  if (direction === "across") {
+    prevCol--; // Move left
+  } else if (direction === "down") {
+    prevRow--; // Move up
+  }
+
+  // Move to the previous valid (non-null) cell
+  while (prevRow >= 0 && prevCol >= 0) {
+    if (crosswordData.grid[prevRow][prevCol] !== null) {
+      setFocusedClue({ row: prevRow, col: prevCol });
+      inputRefs.current[`${prevRow}-${prevCol}`]?.focus();
+      return;
+    }
+
+    // Skip black cells and move accordingly
+    if (direction === "across") {
+      prevCol--;
+      if (prevCol < 0) {
+        prevRow--; // Move to the previous row
+        prevCol = crosswordData.grid[prevRow]?.length - 1 || 0;
+      }
+    } else if (direction === "down") {
+      prevRow--;
+      if (prevRow < 0) {
+        return; // Stop at the first row
+      }
+    }
+  }
+};
 
   return (
     <>
       {!isRunning && <Overlay setIsRunning={setIsRunning} />}
-      <nav className="d-flex py-2 px-3 mb-5 justify-content-between border-bottom">
-      <div className="w-auto">
-          <button className="bg-transparent p-0">
-            <img src={SettingIcon} alt="stop" width={18} />
-          </button>
+      <nav className="d-flex py-2 px-3 mb-lg-5 mb-3 justify-content-between border-bottom">
+        <div className="w-auto">
+          <div className="w-auto">
+            <button
+              className="bg-transparent p-0 me-1"
+              onClick={() => setIsRunning(!isRunning)}
+            >
+              <img src={stopIcon} alt="stop" width={18} />
+            </button>
+            <span className="fw-bold mt-1">{formatTime(time)}</span>
+          </div>
         </div>
-      
+
         <div className="w-auto title">
           <h5 className=" text-start p-0 m-0">The Mini Crossword Puzzle</h5>
         </div>
-        <div className="w-auto">
-          <span className="fw-bold mt-1">{formatTime(time)}</span>
-          <button
-            className="bg-transparent p-0 ms-1"
-            onClick={() => setIsRunning(false)}
-          >
-            <img src={stopIcon} alt="stop" width={18} />
+        <div className="d-flex">
+         <div className="dropdown">
+            <button
+              className={`btn btn-light p-1 pt-0 border-0`}
+              type="button"
+              id="dropdownMenuButton"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <img src={MoreIcon} alt="Settings" width={18} />
+            </button>
+            <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <li>
+                <button className="dropdown-item" onClick={() => setAutoCheck(!autoCheck)}>
+                  {autoCheck && "✅"} Autocheck 
+                </button>
+              </li>
+              <li><button className="dropdown-item" onClick={handleCheckSelectedRow}>Check Word</button></li>
+              <li><button className="dropdown-item" onClick={handleCheckPuzzle}>Check Puzzel</button></li>
+              <li><button className="dropdown-item" onClick={handleRevealSelectedRow}>Reveal Word</button></li>
+              <li><button className="dropdown-item" onClick={handleRevealWholePuzzle}>Reveal Puzzel</button></li>
+              <li><button className="dropdown-item" onClick={handleClearSelectedRow}>Clear Row</button></li>
+              <li><button className="dropdown-item" onClick={handleClearPuzzle}>Clear All</button></li>
+              <li><button className="dropdown-item" onClick={handleRestart}>Restart</button></li>
+              
+            </ul>
+          </div>
+          <div className="ms-2">
+          <button className="  btn btn-light p-1 pt-0 border-0">
+            <img src={SettingIcon} alt="stop" width={18} />
           </button>
+          </div> 
         </div>
-       
       </nav>
       <div className="d-flex justify-content-center">
         <div className={`container  ${!isRunning && "blur-content"}`}>
@@ -241,14 +487,13 @@ const Puzzel = () => {
                       <tr key={rowIndex}>
                         {row.map((cell, colIndex) => {
                           const key = `${rowIndex}-${colIndex}`;
-                         
 
                           return (
                             <td
                               key={colIndex}
                               style={{
-                                width: 50,
-                                height: 50,
+                                width: "65px",
+                                height: "60px",
                                 background:
                                   cell === null
                                     ? "black"
@@ -293,10 +538,13 @@ const Puzzel = () => {
                                   onChange={(e) =>
                                     handleChange(rowIndex, colIndex, e)
                                   }
-                                  onKeyDown={(e) => handleKeyDown(row, col, e)}
+                                  onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}
+                                  // onKeyDown={(e) => handleKeyDown(row, col, e)}
                                   ref={(el) => (inputRefs.current[key] = el)}
                                   inputMode="none" // Prevents mobile keyboard
-                                  className="text-center custom-"
+                                  className={`text-center custom-input ${
+                                    wrongAnswers[key] && answers[key] ? "wrong-char" : ""
+                                  }`}
                                   readOnly={!isRunning}
                                   style={{
                                     width: "65px",
@@ -338,6 +586,7 @@ const Puzzel = () => {
               <CustomKeyBoard
                 onKeyPress={(key) => {
                   if (key === "⌫") {
+                    moveToPreviousCell(focusedClue.row, focusedClue.col);
                     setAnswers((prev) => {
                       const newAnswers = { ...prev };
                       delete newAnswers[
@@ -346,6 +595,8 @@ const Puzzel = () => {
                       return newAnswers;
                     });
                   } else {
+                    autoCheckOnValueChange(focusedClue.row, focusedClue.col, key);
+                    moveToNextCell(focusedClue.row, focusedClue.col)
                     setAnswers((prev) => ({
                       ...prev,
                       [`${focusedClue.row}-${focusedClue.col}`]: key,
@@ -356,39 +607,57 @@ const Puzzel = () => {
             </div>
 
             <div className="col clue-section">
-              <h6 className="ps-3">Across</h6>
-              <ul>
-                {Object.entries(crosswordData.clues?.across).map(
-                  ([num, clueData]) => (
-                    <li
-                      key={num}
-                      style={{ cursor: "pointer", listStyle: "none" }}
-                      onClick={() =>
-                        handleClueClick(clueData.row, clueData.col, "across")
-                      }
-                    >
-                      <strong>{num}:</strong> {clueData.clue}
-                    </li>
-                  )
-                )}
-              </ul>
-              <h6 className="ps-3">Down</h6>
-              <ul>
-                {Object.entries(crosswordData.clues?.down).map(
-                  ([num, clueData]) => (
-                    <li
-                      key={num}
-                      style={{ cursor: "pointer", listStyle: "none" }}
-                      onClick={() =>
-                        handleClueClick(clueData.row, clueData.col, "down")
-                      }
-                    >
-                      <strong>{num}:</strong> {clueData.clue}
-                    </li>
-                  )
-                )}
-              </ul>
-            </div>
+  <h6 className="ps-3">Across</h6>
+  <ul>
+    {Object.entries(crosswordData.clues?.across).map(([num, clueData]) => {
+      const isSelected =
+        focusedClue?.row === clueData.row && focusedClue?.col === clueData.col && direction === "across";
+
+      return (
+        <li
+          key={num}
+          style={{
+            cursor: "pointer",
+            listStyle: "none",
+            background: isSelected ? "#a4dbfb" : "transparent", // Highlight selected clue
+            // fontWeight: isSelected ? "bold" : "normal", // Make it bold when selected
+            padding: "2px 5px",
+            borderRadius: "4px",
+          }}
+          onClick={() => handleClueClick(clueData.row, clueData.col, "across")}
+        >
+          <strong>{num}:</strong> {clueData.clue}
+        </li>
+      );
+    })}
+  </ul>
+
+  <h6 className="ps-3">Down</h6>
+  <ul>
+    {Object.entries(crosswordData.clues?.down).map(([num, clueData]) => {
+      const isSelected =
+        focusedClue?.row === clueData.row && focusedClue?.col === clueData.col && direction === "down";
+
+      return (
+        <li
+          key={num}
+          style={{
+            cursor: "pointer",
+            listStyle: "none",
+            background: isSelected ? "#a4dbfb" : "transparent", // Highlight selected clue
+            // fontWeight: isSelected ? "bold" : "normal",
+            padding: "2px 5px",
+            borderRadius: "4px",
+          }}
+          onClick={() => handleClueClick(clueData.row, clueData.col, "down")}
+        >
+          <strong>{num}:</strong> {clueData.clue}
+        </li>
+      );
+    })}
+  </ul>
+</div>
+
           </div>
         </div>
       </div>

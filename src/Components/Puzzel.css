@@ -54,10 +54,7 @@
     }
 }
 
-.puzzel-section{
- 
 
-}
 
 .keyboard {
     
@@ -103,4 +100,28 @@
   .blur-content{
     opacity: .5;
     
+  }
+
+  .wrong-char {
+    content: "" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAjklEQVR4nO3asQnDUBAE0WlCwv23osw4sgOXM+LD78DJntnXwTLRwUHVz4RTeAkXw0d8BIUnEwmH8N4jvsKDaeyIELZECFsihC0RoiVStESKlkjREilaIkVLpGiJFC2Rwl52IWyJELZECFsihC0RwpYIYUuEsCVC+A8llvUOsUes94iTqYRrP6rMHVHkuAEZk17Q1QvCjwAAAABJRU5ErkJggg==") !important;
+    background-size: contain !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    transform: translate(-50%, -50%)!important;
+    pointer-events: none !important; /* Ensure the user can still interact with the input */
+  }
+  
+  .dropdown-item{
+    padding: 4px 10px !important;
+  }
+
+  .dropdown-menu{
+    min-width: 100px !important;
+    font-size: 13px !important;
   }

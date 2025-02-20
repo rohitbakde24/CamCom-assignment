@@ -354,74 +354,95 @@ const Puzzel = () => {
     }
   };
   
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (!focusedClue) return; // No cell selected
   
+      const { row, col } = focusedClue;
+      const key = e.key.toUpperCase();
+  
+      if (key.match(/^[A-Z]$/)) {
+        // Insert letter at the selected yellow box
+        setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: key }));
+        
+        // Move to the next valid cell
+        moveToNextCell(row, col);
+      } else if (e.key === "Backspace") {
+        if (!answers[`${row}-${col}`]) {
+          // Move back only if the current cell is empty
+          moveToPreviousCell(row, col);
+        } else {
+          // Otherwise, just clear the letter
+          setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: "" }));
+        }
+      }
+    };
+  
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [focusedClue, answers, direction]); // Watch for direction changes
+  
+
   const moveToNextCell = (row, col) => {
-  let nextRow = row;
-  let nextCol = col;
-
-  if (direction === "across") {
-    nextCol++; // Move right
-  } else if (direction === "down") {
-    nextRow++; // Move down
-  }
-
-  // Move to the next valid (non-null) cell
-  while (nextRow < crosswordData.grid.length && nextCol < crosswordData.grid[nextRow].length) {
-    if (crosswordData.grid[nextRow][nextCol] !== null) {
-      setFocusedClue({ row: nextRow, col: nextCol });
-      inputRefs.current[`${nextRow}-${nextCol}`]?.focus();
-      return;
-    }
-
-    // Skip black cells and move accordingly
+    let nextRow = row;
+    let nextCol = col;
+  
     if (direction === "across") {
-      nextCol++;
-      if (nextCol >= crosswordData.grid[row].length) {
-        nextRow++; // Move to the next row
-        nextCol = 0;
-      }
+      nextCol++; // Move right
     } else if (direction === "down") {
-      nextRow++;
-      if (nextRow >= crosswordData.grid.length) {
-        return; // Stop at the last row
+      nextRow++; // Move down
+    }
+  
+    while (nextRow < crosswordData.grid.length && nextCol < crosswordData.grid[nextRow].length) {
+      if (crosswordData.grid[nextRow][nextCol] !== null) {
+        setFocusedClue({ row: nextRow, col: nextCol });
+        return;
+      }
+  
+      // Skip black cells
+      if (direction === "across") {
+        nextCol++;
+        if (nextCol >= crosswordData.grid[row].length) {
+          nextRow++;
+          nextCol = 0;
+        }
+      } else if (direction === "down") {
+        nextRow++;
+        if (nextRow >= crosswordData.grid.length) return;
       }
     }
-  }
-};
-
-const moveToPreviousCell = (row, col) => {
-  let prevRow = row;
-  let prevCol = col;
-
-  if (direction === "across") {
-    prevCol--; // Move left
-  } else if (direction === "down") {
-    prevRow--; // Move up
-  }
-
-  // Move to the previous valid (non-null) cell
-  while (prevRow >= 0 && prevCol >= 0) {
-    if (crosswordData.grid[prevRow][prevCol] !== null) {
-      setFocusedClue({ row: prevRow, col: prevCol });
-      inputRefs.current[`${prevRow}-${prevCol}`]?.focus();
-      return;
-    }
-
-    // Skip black cells and move accordingly
+  };
+  
+  const moveToPreviousCell = (row, col) => {
+    let prevRow = row;
+    let prevCol = col;
+  
     if (direction === "across") {
-      prevCol--;
-      if (prevCol < 0) {
-        prevRow--; // Move to the previous row
-        prevCol = crosswordData.grid[prevRow]?.length - 1 || 0;
-      }
+      prevCol--; // Move left
     } else if (direction === "down") {
-      prevRow--;
-      if (prevRow < 0) {
-        return; // Stop at the first row
+      prevRow--; // Move up
+    }
+  
+    while (prevRow >= 0 && prevCol >= 0) {
+      if (crosswordData.grid[prevRow][prevCol] !== null) {
+        setFocusedClue({ row: prevRow, col: prevCol });
+        return;
+      }
+  
+      // Skip black cells
+      if (direction === "across") {
+        prevCol--;
+        if (prevCol < 0) {
+          prevRow--;
+          prevCol = crosswordData.grid[prevRow]?.length - 1 || 0;
+        }
+      } else if (direction === "down") {
+        prevRow--;
+        if (prevRow < 0) return;
       }
     }
-  }
-};
+  };
+  
 
   return (
     <>
@@ -531,31 +552,26 @@ const moveToPreviousCell = (row, col) => {
                                 </span>
                               )}
                               {typeof cell === "string" && (
-                                <input
-                                  type="text"
-                                  maxLength="1"
-                                  value={answers[key] || ""}
-                                  onChange={(e) =>
-                                    handleChange(rowIndex, colIndex, e)
-                                  }
-                                  onKeyDown={(e) => handleKeyDown(rowIndex, colIndex, e)}
-                                  // onKeyDown={(e) => handleKeyDown(row, col, e)}
-                                  ref={(el) => (inputRefs.current[key] = el)}
-                                  inputMode="none" // Prevents mobile keyboard
-                                  className={`text-center custom-input ${
-                                    wrongAnswers[key] && answers[key] ? "wrong-char" : ""
-                                  }`}
-                                  readOnly={!isRunning}
-                                  style={{
-                                    width: "65px",
-                                    height: "55px",
-                                    fontSize: "1.5rem",
-                                    textTransform: "uppercase",
-                                    border: "none",
-                                    outline: "none",
-                                    textAlign: "center",
-                                  }}
-                                />
+                              <input
+                              type="text"
+                              maxLength="1"
+                              value={answers[key] || ""}
+                              readOnly // Make it non-focusable
+                              className={`text-center custom-input ${
+                                wrongAnswers[key] && answers[key] ? "wrong-char" : ""
+                              }`}
+                              style={{
+                                width: "65px",
+                                height: "55px",
+                                fontSize: "1.5rem",
+                                textTransform: "uppercase",
+                                border: "none",
+                                outline: "none",
+                                textAlign: "center",
+                                // backgroundColor: focusedClue?.row === rowIndex && focusedClue?.col === colIndex ? "#ffda00" : "white",
+                              }}
+                            />
+                              
                               )}
                             </td>
                           );
@@ -595,7 +611,9 @@ const moveToPreviousCell = (row, col) => {
                       return newAnswers;
                     });
                   } else {
-                    autoCheckOnValueChange(focusedClue.row, focusedClue.col, key);
+                    if(autoCheck){
+                      autoCheckOnValueChange(focusedClue.row, focusedClue.col, key);
+                    }
                     moveToNextCell(focusedClue.row, focusedClue.col)
                     setAnswers((prev) => ({
                       ...prev,

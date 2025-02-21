@@ -32,6 +32,7 @@ const crosswordData = {
       9: { clue: "A buzzing insect", row: 4, col: 1 },
     },
     down: {
+      1: { clue: "use for testing", row: 0, col: 0 },
       2: { clue: "Opposite of rough", row: 0, col: 1 },
       3: { clue: "A small, buzzing insect", row: 0, col: 2 },
       4: { clue: "A type of tree or a company", row: 0, col: 3 },

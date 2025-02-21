@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Puzzel.css";
 import CustomKeyBoard from "./CustomKeyBoard";
-import { arrowBack, arrowNext, MoreIcon, SettingIcon, stopIcon } from "../assets/base64";
+import { arrowBack, arrowNext, MoreIcon, ResetIcon, SettingIcon, stopIcon } from "../assets/base64";
 import Overlay from "./Overlay";
+import ConfirmationBox from "./ConfirmationBox";
+import CongratsPopup from "./CongratsPopup";
 
 const crosswordData = {
   grid: [
@@ -39,9 +41,18 @@ const crosswordData = {
       5: { clue: "A popular search engine", row: 0, col: 4 },
     },
   },
+  solution: {
+    "0-0": "F", "0-1": "I", "0-2": "F", "0-3": "A", "0-4": "Y",
+    "1-0": "B", "1-1": "E", "1-2": "E", "1-3": "S", "1-4": "A",
+    "2-0": "C", "2-1": "A", "2-2": "T", "2-3": "E", "2-4": "Z",
+    "3-0": "A", "3-1": "P", "3-2": "P", "3-3": "L", "3-4": "E",
+    "4-1": "P", "4-2": "B", "4-3": "L",
+  },
 };
 
 const Puzzel = () => {
+  const inputRefs = useRef({});
+
   const [answers, setAnswers] = useState({});
   const [focusedClue, setFocusedClue] = useState({
     row:0,
@@ -49,19 +60,56 @@ const Puzzel = () => {
   });
   const [direction, setDirection] = useState("across");
   const [currentClueIndex, setCurrentClueIndex] = useState(0);
-  const inputRefs = useRef({});
+  const [revealedAnswers, setRevealedAnswers] = useState({});
 
-  const [selectedRow, setSelectedRow] = useState(null);
+
+  const [selectedRow, setSelectedRow] = useState(0);
   const [time, setTime] = useState(0);
+  const [finalTime, setFinalTime] = useState(null);
 
-  const resetTimer = () => setTime(0);
-
+  
   const [isRunning, setIsRunning] = useState(true);
   const [autoCheck, setAutoCheck] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState({});
-  const [selectedCol, setSelectedCol] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedCol, setSelectedCol] = useState(0);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [showRevealConfirmation, setShowRevealConfirmation] = useState(false);
+  const [puzzleSolved, setPuzzleSolved] = useState(false);
+  const [hasSeenCongrats, setHasSeenCongrats] = useState(false);
+  
 
+ // Puzzle solved check
+useEffect(() => {
+  if (!crosswordData.solution || hasSeenCongrats) return; 
+
+  const requiredKeys = crosswordData.grid
+    .flatMap((row, rowIndex) =>
+      row.map((cell, colIndex) => (cell !== null ? `${rowIndex}-${colIndex}` : null))
+    )
+    .filter(Boolean);
+
+  const isSolved = requiredKeys.every((key) => answers[key] === crosswordData.solution[key]);
+
+  if (isSolved) {
+    setPuzzleSolved(true);
+    setFinalTime(time); 
+    setIsRunning(false); 
+    setHasSeenCongrats(true); 
+  }
+}, [answers]);
+
+const resetGame = () => {
+  setAnswers({});
+  setWrongAnswers({});
+  setPuzzleSolved(false);
+  setTime(0);
+  setFinalTime(null);
+  setIsRunning(true);
+  setHasSeenCongrats(false); 
+};
+
+  const resetTimer = () => setTime(0);
+  
   useEffect(() => {
     let interval;
     if (isRunning) {
@@ -73,6 +121,7 @@ const Puzzel = () => {
     }
     return () => clearInterval(interval);
   }, [isRunning]);
+
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -113,78 +162,83 @@ const Puzzel = () => {
   const handleCellClick = (row, col) => {
     setSelectedRow(row);
     setSelectedCol(col);
-  
-    if (!isRunning) return;
-  
-    if (crosswordData.grid[row][col] !== null) {
-      if (focusedClue?.row === row && focusedClue?.col === col) {
-        // If the same cell is clicked again, toggle direction
-        setDirection((prevDirection) => {
-          const newDirection = prevDirection === "down" ? "across" : "down";
-  
-          // Find the clue number for the new direction
-          let clueNumber = null;
-  
-          if (newDirection === "across") {
-            for (let c = 0; c < crosswordData.grid[row].length; c++) {
-              if (crosswordData.numbers[`${row}-${c}`]) {
-                clueNumber = crosswordData.numbers[`${row}-${c}`];
-                break;
-              }
-            }
-          } else {
-            for (let r = 0; r < crosswordData.grid.length; r++) {
-              if (crosswordData.numbers[`${r}-${col}`]) {
-                clueNumber = crosswordData.numbers[`${r}-${col}`];
-                break;
-              }
-            }
-          }
-  
-          if (clueNumber) {
-            const newIndex = allClues.findIndex(([clueNum]) => Number(clueNum) === clueNumber);
-            if (newIndex !== -1) setCurrentClueIndex(newIndex);
-          }
-  
-          return newDirection;
-        });
-      } else {
-        // If a new cell is clicked, keep the existing direction
-        setFocusedClue({ row, col });
-  
-        let clueNumber = null;
-  
-        if (direction === "across") {
-          for (let c = 0; c < crosswordData.grid[row].length; c++) {
-            if (crosswordData.numbers[`${row}-${c}`]) {
-              clueNumber = crosswordData.numbers[`${row}-${c}`];
-              break;
-            }
-          }
-        } else {
-          for (let r = 0; r < crosswordData.grid.length; r++) {
-            if (crosswordData.numbers[`${r}-${col}`]) {
-              clueNumber = crosswordData.numbers[`${r}-${col}`];
-              break;
-            }
-          }
-        }
-  
-        if (clueNumber) {
-          const newIndex = allClues.findIndex(([clueNum]) => Number(clueNum) === clueNumber);
-          if (newIndex !== -1) setCurrentClueIndex(newIndex);
-        }
-      }
-    }
-  };
-  
-  
 
-  // Prevent deselecting input when clicking outside
+    if (!isRunning) return;
+
+    if (crosswordData.grid[row][col] !== null) {
+        if (focusedClue?.row === row && focusedClue?.col === col) {
+            // Toggle direction when clicking the same cell
+            setDirection((prevDirection) => {
+                const newDirection = prevDirection === "down" ? "across" : "down";
+
+                let clueNumber = null;
+
+                if (row === 0 && col === 0) {
+                    clueNumber = crosswordData.numbers["0-0"];
+                } else {
+                    if (newDirection === "across") {
+                        for (let c = 0; c < crosswordData.grid[row].length; c++) {
+                            if (crosswordData.numbers[`${row}-${c}`]) {
+                                clueNumber = crosswordData.numbers[`${row}-${c}`];
+                                break;
+                            }
+                        }
+                    } else {
+                        for (let r = 0; r < crosswordData.grid.length; r++) {
+                            if (crosswordData.numbers[`${r}-${col}`]) {
+                                clueNumber = crosswordData.numbers[`${r}-${col}`];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (clueNumber) {
+                    const newIndex = allClues.findIndex(([clueNum]) => Number(clueNum) === clueNumber);
+                    if (newIndex !== -1) setCurrentClueIndex(newIndex);
+                }
+
+                return newDirection;
+            });
+        } else {
+            // Keep the same direction when selecting a new cell
+            setFocusedClue({ row, col });
+
+            let clueNumber = null;
+
+            if (row === 0 && col === 0) {
+                clueNumber = crosswordData.numbers["0-0"];
+            } else {
+                if (direction === "across") {
+                    for (let c = 0; c < crosswordData.grid[row].length; c++) {
+                        if (crosswordData.numbers[`${row}-${c}`]) {
+                            clueNumber = crosswordData.numbers[`${row}-${c}`];
+                            break;
+                        }
+                    }
+                } else {
+                    for (let r = 0; r < crosswordData.grid.length; r++) {
+                        if (crosswordData.numbers[`${r}-${col}`]) {
+                            clueNumber = crosswordData.numbers[`${r}-${col}`];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (clueNumber) {
+                const newIndex = allClues.findIndex(([clueNum]) => Number(clueNum) === clueNumber);
+                if (newIndex !== -1) setCurrentClueIndex(newIndex);
+            }
+        }
+    }
+};
+
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest("td")) {
-        return; // Do nothing if clicking outside the table
+        return; 
       }
     };
     document.addEventListener("click", handleClickOutside);
@@ -194,16 +248,19 @@ const Puzzel = () => {
   const handleClueNavigation = (step) => {
     let newIndex =
       (currentClueIndex + step + allClues.length) % allClues.length;
+    
+    const [clueNumber, clueData] = allClues[newIndex];
+  
     setCurrentClueIndex(newIndex);
-    const [_, clueData] = allClues[newIndex];
     setFocusedClue({ row: clueData.row, col: clueData.col });
-    setDirection(
-      Object.keys(crosswordData.clues.across).includes(String(_))
-        ? "across"
-        : "down"
-    );
+  
+    if (crosswordData.clues.across[clueNumber] && crosswordData.clues.down[clueNumber]) {
+      setDirection((prevDirection) => (prevDirection === "across" ? "down" : "across"));
+    } else {
+      setDirection(crosswordData.clues.across[clueNumber] ? "across" : "down");
+    }
   };
-
+  
   useEffect(() => {
     // Focus on the first available input field when the component mounts
     const firstKey = Object.keys(crosswordData.numbers)[0];
@@ -215,55 +272,6 @@ const Puzzel = () => {
       });
     }
   }, []);
-
-    // const handleChange = (row, col, e) => {
-    //   const value = e.target.value.toUpperCase();
-    //   const correctValue = crosswordData.grid[row][col];
-
-    //   setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: value }));
-
-    //   if (autoCheck) {
-    //     setWrongAnswers((prev) => ({
-    //       ...prev,
-    //       [`${row}-${col}`]: value && value !== correctValue ? true : false,
-    //     }));
-    //   }
-    // };
-
-  // const handleKeyDown = (row, col, e) => {
-  //   let newRow = row;
-  //   let newCol = col;
-  //   switch (e.key) {
-  //     case "ArrowRight":
-  //       newCol += 1;
-  //       break;
-  //     case "ArrowLeft":
-  //       newCol -= 1;
-  //       break;
-  //     case "ArrowDown":
-  //       newRow += 1;
-  //       break;
-  //     case "ArrowUp":
-  //       newRow -= 1;
-  //       break;
-  //     case "Backspace":
-  //       if (!e.target.value) {
-  //         if (direction === "across") {
-  //           newCol = Math.max(0, col - 1);
-  //         } else {
-  //           newRow = Math.max(0, row - 1);
-  //         }
-  //       }
-  //       break;
-  //     default:
-  //       return; // Ignore other keys
-  //   }
-
-  //   const newKey = `${newRow}-${newCol}`;
-  //   if (inputRefs.current[newKey]) {
-  //     inputRefs.current[newKey].focus();
-  //   }
-  // };
 
   // ✅ Check Only Selected Row (Supports Across & Down)
   const handleCheckSelectedRow = () => {
@@ -309,59 +317,87 @@ const Puzzel = () => {
   // ✅ Clear Only Selected Row (Supports Across & Down)
   const handleClearSelectedRow = () => {
     if (selectedRow === null || selectedCol === null) return;
-
+  
     const updatedAnswers = { ...answers };
     const updatedWrongAnswers = { ...wrongAnswers };
-
+  
     crosswordData.grid.forEach((row, rowIndex) => {
       row.forEach((_, colIndex) => {
         const key = `${rowIndex}-${colIndex}`;
+  
         if (
           (direction === "across" && rowIndex === selectedRow) ||
           (direction === "down" && colIndex === selectedCol)
         ) {
-          delete updatedAnswers[key];
-          delete updatedWrongAnswers[key];
+          if (!revealedAnswers[key]) { // Skip revealed values
+            delete updatedAnswers[key];
+            delete updatedWrongAnswers[key];
+          }
         }
       });
     });
-
+  
     setAnswers(updatedAnswers);
     setWrongAnswers(updatedWrongAnswers);
   };
+  
 
   // ✅ Clear Entire Puzzle
   const handleClearPuzzle = () => {
-    setAnswers({});
-    setWrongAnswers({});
+    setAnswers((prev) => {
+      const updatedAnswers = {};
+  
+      // Preserve revealed answers
+      Object.keys(prev).forEach((key) => {
+        if (revealedAnswers[key]) {
+          updatedAnswers[key] = prev[key]; // Keep revealed letters
+        }
+      });
+  
+      return updatedAnswers;
+    });
+  
+    setWrongAnswers({}); // Clear wrong answers
   };
 
   const handleRestart = () => {
     setAnswers({});
     setWrongAnswers({});
     resetTimer();
+    setShowResetConfirmation(false)
+    setFocusedClue({
+      row:0,
+      col:0
+    })
+    setCurrentClueIndex(0)
   };
 
   const handleRevealWholePuzzle = () => {
     const updatedAnswers = {};
-
+    const updatedRevealed = {};
+  
     crosswordData.grid.forEach((row, rowIndex) => {
       row.forEach((letter, colIndex) => {
         const key = `${rowIndex}-${colIndex}`;
         updatedAnswers[key] = letter; // Fill correct letter
+        updatedRevealed[key] = true; // Mark as revealed
       });
     });
-
+  
     setAnswers(updatedAnswers);
     setWrongAnswers({});
+    setRevealedAnswers(updatedRevealed);
+    setShowRevealConfirmation(false)
   };
+  
 
   const handleRevealSelectedRow = () => {
     if (selectedRow === null || selectedCol === null) return;
-
+  
     const updatedAnswers = { ...answers };
     const updatedWrongAnswers = { ...wrongAnswers };
-
+    const updatedRevealed = { ...revealedAnswers };
+  
     crosswordData.grid.forEach((row, rowIndex) => {
       row.forEach((letter, colIndex) => {
         const key = `${rowIndex}-${colIndex}`;
@@ -370,31 +406,17 @@ const Puzzel = () => {
           (direction === "down" && colIndex === selectedCol)
         ) {
           updatedAnswers[key] = letter; // Fill correct letter
+          updatedRevealed[key] = true; // Mark as revealed
           delete updatedWrongAnswers[key]; // Remove wrong marking
         }
       });
     });
-
+  
     setAnswers(updatedAnswers);
     setWrongAnswers(updatedWrongAnswers);
+    setRevealedAnswers(updatedRevealed);
   };
-
-
-  const handleChange = (row, col, e) => {
-    debugger
-    const value = e.target.value.toUpperCase();
-    
   
-    setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: value }));
-  
-    if (autoCheck) {
-      autoCheckOnValueChange(row, col, value);
-    }
-  
-    if (value) {
-      moveToNextCell(row, col);
-    }
-  };
 
   const autoCheckOnValueChange = (row, col, value) =>{
     const correctValue = crosswordData.grid[row][col];
@@ -404,31 +426,39 @@ const Puzzel = () => {
     }));
   }
   
-
   const handleKeyInput = (key) => {
     if (!focusedClue) return; // No cell selected
   
     const { row, col } = focusedClue;
+    const keyPosition = `${row}-${col}`;
     const upperKey = key.toUpperCase();
   
+    // Check if the cell is revealed or already has a value
+    const isRevealed = revealedAnswers[keyPosition];
+    const alreadyFilled = answers[keyPosition];
+  
     if (/^[A-Z]$/.test(upperKey)) {
+      if (isRevealed || alreadyFilled) {
+        moveToNextCell(row, col); // Move forward but do not change value
+        return;
+      }
+  
       if (autoCheck) {
         autoCheckOnValueChange(row, col, upperKey);
       }
       setAnswers((prev) => {
-        const newAnswers = { ...prev, [`${row}-${col}`]: upperKey };
+        const newAnswers = { ...prev, [keyPosition]: upperKey };
         moveToNextCell(row, col);
         return newAnswers;
       });
     } else if (key === "Backspace" || key === "⌫") {
       setAnswers((prev) => {
-        if (!prev[`${row}-${col}`]) {
-          moveToPreviousCell(row, col);
-        }
-        return { ...prev, [`${row}-${col}`]: "" };
+        moveToPreviousCell(row, col);
+        return isRevealed ? prev : { ...prev, [keyPosition]: "" }; // Only clear if not revealed
       });
     }
-  }
+  };
+    
 
   useEffect(() => {
     const handleKeyPress = (e) => handleKeyInput(e.key);
@@ -496,11 +526,23 @@ const Puzzel = () => {
       }
     }
   };
-  
+
+  const onResetButtonClick = () =>{
+    setShowResetConfirmation(!showResetConfirmation)
+  }
+  const onRevealButtonClick = () =>{
+    setShowRevealConfirmation(!showRevealConfirmation)
+  }
+  const BackToPuzzel = () =>{
+    setPuzzleSolved(false)
+  }
 
   return (
     <>
-      {!isRunning && <Overlay setIsRunning={setIsRunning} />}
+      {!isRunning && !hasSeenCongrats && <Overlay setIsRunning={setIsRunning} />}
+      {showResetConfirmation && <ConfirmationBox handleCancel={onResetButtonClick} handleSubmission={handleRestart} title={'Are you sure you want to start over?'} btnText={'Start Over'}/>}
+      {showRevealConfirmation && <ConfirmationBox handleCancel={onRevealButtonClick} handleSubmission={handleRevealWholePuzzle} title={'Are you sure you want to reveal the puzzel?'} btnText={'Reveal'}/>}
+      {puzzleSolved && <CongratsPopup handleCancel={BackToPuzzel} time={formatTime(finalTime)}/>}
       <nav className="d-flex py-2 px-3 mb-lg-5 mb-3 justify-content-between border-bottom">
         <div className="w-auto">
           <div className="w-auto">
@@ -508,16 +550,28 @@ const Puzzel = () => {
               className="bg-transparent p-0 me-1"
               onClick={() => setIsRunning(!isRunning)}
             >
-              <img src={stopIcon} alt="stop" width={18} />
+              <img src={stopIcon} alt="stop" width={22} />
             </button>
             <span className="fw-bold mt-1">{formatTime(time)}</span>
           </div>
         </div>
 
         <div className="w-auto title">
-          <h5 className=" text-start p-0 m-0">The Mini Crossword Puzzle</h5>
+          <h5 className="text-start p-0 m-0">The Mini Crossword Puzzle</h5>
         </div>
         <div className="d-flex">
+           {
+             hasSeenCongrats &&
+            <div className="me-2 pe-1">
+            <button
+              className={`btn btn-light p-1 pt-0 border-0`}
+              type="button"
+              onClick={resetGame}
+            >
+              <img src={ResetIcon} alt="Reset" width={18} />
+            </button>
+            </div>
+           }
          <div className="dropdown">
             <button
               className={`btn btn-light p-1 pt-0 border-0`}
@@ -526,7 +580,7 @@ const Puzzel = () => {
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              <img src={MoreIcon} alt="Settings" width={18} />
+              <img src={MoreIcon} alt="More" width={18} />
             </button>
             <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
             <li>
@@ -537,22 +591,22 @@ const Puzzel = () => {
               <li><button className="dropdown-item" onClick={handleCheckSelectedRow}>Check Word</button></li>
               <li><button className="dropdown-item" onClick={handleCheckPuzzle}>Check Puzzel</button></li>
               <li><button className="dropdown-item" onClick={handleRevealSelectedRow}>Reveal Word</button></li>
-              <li><button className="dropdown-item" onClick={handleRevealWholePuzzle}>Reveal Puzzel</button></li>
-              <li><button className="dropdown-item" onClick={handleClearSelectedRow}>Clear Row</button></li>
-              <li><button className="dropdown-item" onClick={handleClearPuzzle}>Clear All</button></li>
-              <li><button className="dropdown-item" onClick={handleRestart}>Restart</button></li>
+              <li><button className="dropdown-item" onClick={onRevealButtonClick}>Reveal Puzzel</button></li>
+              <li><button className="dropdown-item" onClick={handleClearSelectedRow}>Clear Word</button></li>
+              <li><button className="dropdown-item" onClick={handleClearPuzzle}>Clear Puzzel</button></li>
+              <li><button className="dropdown-item" onClick={onResetButtonClick}>Reset Puzzel</button></li>
               
             </ul>
           </div>
-          <div className="ms-2">
+          <div className="ms-2 ps-1">
           <button className="  btn btn-light p-1 pt-0 border-0">
-            <img src={SettingIcon} alt="stop" width={18} />
+            <img src={SettingIcon} alt="stop" width={22} />
           </button>
           </div> 
         </div>
       </nav>
       <div className="d-flex justify-content-center">
-        <div className={`container  ${!isRunning && "blur-content"}`}>
+        <div className={`container  ${((!isRunning && !hasSeenCongrats) || showResetConfirmation) && "blur-content"}`}>
           <div className="row  d-flex justify-content-center">
             <div className="col-auto px-0 ">
               <div className="puzzel-section">
@@ -621,7 +675,9 @@ const Puzzel = () => {
                                 textTransform: "uppercase",
                                 border: "none",
                                 outline: "none",
+                                fontWeight:'bold',
                                 textAlign: "center",
+                                color: revealedAnswers[key] ? "#0D92F4" : "black",
                                 // backgroundColor: focusedClue?.row === rowIndex && focusedClue?.col === colIndex ? "#ffda00" : "white",
                               }}
                             />

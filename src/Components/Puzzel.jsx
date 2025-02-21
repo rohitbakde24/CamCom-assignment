@@ -43,7 +43,10 @@ const crosswordData = {
 
 const Puzzel = () => {
   const [answers, setAnswers] = useState({});
-  const [focusedClue, setFocusedClue] = useState(null);
+  const [focusedClue, setFocusedClue] = useState({
+    row:0,
+    col:0
+  });
   const [direction, setDirection] = useState("across");
   const [currentClueIndex, setCurrentClueIndex] = useState(0);
   const inputRefs = useRef({});
@@ -107,22 +110,75 @@ const Puzzel = () => {
     setFocusedClue({ row, col });
     setDirection(dir);
   };
-
   const handleCellClick = (row, col) => {
     setSelectedRow(row);
     setSelectedCol(col);
-    if (!isRunning) {
-      return;
-    }
+  
+    if (!isRunning) return;
+  
     if (crosswordData.grid[row][col] !== null) {
       if (focusedClue?.row === row && focusedClue?.col === col) {
-        setDirection((prev) => (prev === "down" ? "across" : "down"));
+        // If the same cell is clicked again, toggle direction
+        setDirection((prevDirection) => {
+          const newDirection = prevDirection === "down" ? "across" : "down";
+  
+          // Find the clue number for the new direction
+          let clueNumber = null;
+  
+          if (newDirection === "across") {
+            for (let c = 0; c < crosswordData.grid[row].length; c++) {
+              if (crosswordData.numbers[`${row}-${c}`]) {
+                clueNumber = crosswordData.numbers[`${row}-${c}`];
+                break;
+              }
+            }
+          } else {
+            for (let r = 0; r < crosswordData.grid.length; r++) {
+              if (crosswordData.numbers[`${r}-${col}`]) {
+                clueNumber = crosswordData.numbers[`${r}-${col}`];
+                break;
+              }
+            }
+          }
+  
+          if (clueNumber) {
+            const newIndex = allClues.findIndex(([clueNum]) => Number(clueNum) === clueNumber);
+            if (newIndex !== -1) setCurrentClueIndex(newIndex);
+          }
+  
+          return newDirection;
+        });
       } else {
+        // If a new cell is clicked, keep the existing direction
         setFocusedClue({ row, col });
-        setDirection("across");
+  
+        let clueNumber = null;
+  
+        if (direction === "across") {
+          for (let c = 0; c < crosswordData.grid[row].length; c++) {
+            if (crosswordData.numbers[`${row}-${c}`]) {
+              clueNumber = crosswordData.numbers[`${row}-${c}`];
+              break;
+            }
+          }
+        } else {
+          for (let r = 0; r < crosswordData.grid.length; r++) {
+            if (crosswordData.numbers[`${r}-${col}`]) {
+              clueNumber = crosswordData.numbers[`${r}-${col}`];
+              break;
+            }
+          }
+        }
+  
+        if (clueNumber) {
+          const newIndex = allClues.findIndex(([clueNum]) => Number(clueNum) === clueNumber);
+          if (newIndex !== -1) setCurrentClueIndex(newIndex);
+        }
       }
     }
   };
+  
+  
 
   // Prevent deselecting input when clicking outside
   useEffect(() => {
@@ -348,40 +404,37 @@ const Puzzel = () => {
     }));
   }
   
-  // Handle backspace or clear input
-  const handleKeyDown = (row, col, e) => {
-    if (e.key === "Backspace" && !answers[`${row}-${col}`]) {
-      moveToPreviousCell(row, col);
-    }
-  };
+
+  const handleKeyInput = (key) => {
+    if (!focusedClue) return; // No cell selected
   
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (!focusedClue) return; // No cell selected
+    const { row, col } = focusedClue;
+    const upperKey = key.toUpperCase();
   
-      const { row, col } = focusedClue;
-      const key = e.key.toUpperCase();
-  
-      if (key.match(/^[A-Z]$/)) {
-        // Insert letter at the selected yellow box
-        setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: key }));
-        
-        // Move to the next valid cell
-        moveToNextCell(row, col);
-      } else if (e.key === "Backspace") {
-        if (!answers[`${row}-${col}`]) {
-          // Move back only if the current cell is empty
-          moveToPreviousCell(row, col);
-        } else {
-          // Otherwise, just clear the letter
-          setAnswers((prev) => ({ ...prev, [`${row}-${col}`]: "" }));
-        }
+    if (/^[A-Z]$/.test(upperKey)) {
+      if (autoCheck) {
+        autoCheckOnValueChange(row, col, upperKey);
       }
-    };
-  
+      setAnswers((prev) => {
+        const newAnswers = { ...prev, [`${row}-${col}`]: upperKey };
+        moveToNextCell(row, col);
+        return newAnswers;
+      });
+    } else if (key === "Backspace" || key === "⌫") {
+      setAnswers((prev) => {
+        if (!prev[`${row}-${col}`]) {
+          moveToPreviousCell(row, col);
+        }
+        return { ...prev, [`${row}-${col}`]: "" };
+      });
+    }
+  }
+
+  useEffect(() => {
+    const handleKeyPress = (e) => handleKeyInput(e.key);
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [focusedClue, answers, direction]); // Watch for direction changes
+  }, [focusedClue,answers, direction]); // Removed `answers` dependency
   
 
   const moveToNextCell = (row, col) => {
@@ -514,8 +567,8 @@ const Puzzel = () => {
                             <td
                               key={colIndex}
                               style={{
-                                width: "65px",
-                                height: "60px",
+                                width: "67px",
+                                height: "65px",
                                 background:
                                   cell === null
                                     ? "black"
@@ -600,29 +653,7 @@ const Puzzel = () => {
                   <img src={arrowNext} alt="back" />
                 </button>
               </div>
-              <CustomKeyBoard
-                onKeyPress={(key) => {
-                  if (key === "⌫") {
-                    moveToPreviousCell(focusedClue.row, focusedClue.col);
-                    setAnswers((prev) => {
-                      const newAnswers = { ...prev };
-                      delete newAnswers[
-                        `${focusedClue.row}-${focusedClue.col}`
-                      ];
-                      return newAnswers;
-                    });
-                  } else {
-                    if(autoCheck){
-                      autoCheckOnValueChange(focusedClue.row, focusedClue.col, key);
-                    }
-                    moveToNextCell(focusedClue.row, focusedClue.col)
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [`${focusedClue.row}-${focusedClue.col}`]: key,
-                    }));
-                  }
-                }}
-              />
+              <CustomKeyBoard onKeyPress={handleKeyInput} />
             </div>
 
             <div className="col clue-section">

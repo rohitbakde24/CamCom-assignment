@@ -3,13 +3,15 @@ import { CloseIcon } from "../assets/base64";
 
 const SettingsPopup = ({ onClose, onSave, onRestoreDefaults, settings, setSettings }) => {
     const handleCheckboxChange = (section, option) => {
-        setSettings({
+        let updatedSetting = {
             ...settings,
             [section]: {
                 ...settings[section],
                 [option]: !settings[section][option],
             },
-        });
+        }
+        setSettings(updatedSetting);
+        localStorage.setItem("puzzelSetting", JSON.stringify(updatedSetting));
     };
 
 
@@ -44,14 +46,14 @@ const SettingsPopup = ({ onClose, onSave, onRestoreDefaults, settings, setSettin
                         />{" "}
                         Skip over filled squares
                     </label>
-                    <label className="d-block ps-4">
+                    {/* <label className="d-block ps-4">
                         <input
                             type="checkbox"
                             checked={settings["withinWord"]["skipPenciledSquares"]}
                             onChange={() => handleCheckboxChange("withinWord", "skipPenciledSquares")}
                         />{" "}
                         Even penciled-in squares
-                    </label>
+                    </label> */}
                 </div>
 
                 <div className="section">

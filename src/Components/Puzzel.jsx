@@ -16,11 +16,11 @@ import SettingsPopup from "./SettingPopup";
 
 const crosswordData = {
   grid: [
-    ["F", "I", "F", "A", "Y"],
-    ["B", "E", "E", "S", "A"],
-    ["C", "A", "T", "E", "Z"],
-    ["A", "P", "P", "L", "E"],
-    [null, "P", "B", "L", null],
+    ["V", "E", "S", "P", "A"],
+    ["I", "X", "N", "A", "Y"],
+    ["S", "T", "A", "T", "E"],
+    ["A", "R", "I", "E", "S"],
+    [null, "A", "L", "L", null],
   ],
   numbers: {
     "0-0": 1,
@@ -35,50 +35,50 @@ const crosswordData = {
   },
   clues: {
     across: {
-      1: { clue: "Governing body of world soccer", row: 0, col: 0 },
-      6: { clue: "A common pet with whiskers", row: 1, col: 0 },
-      7: { clue: "Plural of feline animal", row: 2, col: 0 },
-      8: { clue: "A fruit that keeps doctors away", row: 3, col: 0 },
-      9: { clue: "A buzzing insect", row: 4, col: 1 },
+      1: { clue: 'Scooter seen in "Roman Holiday"', row: 0, col: 0 },
+      6: { clue: "No, in pig Latin", row: 1, col: 0 },
+      7: { clue: '"The First____" (pharse on Delaware license Plates)', row: 2, col: 0 },
+      8: { clue: "Zodiac ram", row: 3, col: 0 },
+      9: { clue: "Each and every one", row: 4, col: 1 },
     },
     down: {
-      1: { clue: "use for testing", row: 0, col: 0 },
-      2: { clue: "Opposite of rough", row: 0, col: 1 },
-      3: { clue: "A small, buzzing insect", row: 0, col: 2 },
-      4: { clue: "A type of tree or a company", row: 0, col: 3 },
-      5: { clue: "A popular search engine", row: 0, col: 4 },
+      1: { clue: "Big name in cards", row: 0, col: 0 },
+      2: { clue: "When repeated, newsie's cry", row: 0, col: 1 },
+      3: { clue: "It moves slow as shell", row: 0, col: 2 },
+      4: { clue: 'Dev of 2024\'s "Monkey Man"', row: 0, col: 3 },
+      5: { clue: "Affirmative votes", row: 0, col: 4 },
     },
   },
   solution: {
-    "0-0": "F",
-    "0-1": "I",
-    "0-2": "F",
-    "0-3": "A",
-    "0-4": "Y",
-    "1-0": "B",
-    "1-1": "E",
-    "1-2": "E",
-    "1-3": "S",
-    "1-4": "A",
-    "2-0": "C",
-    "2-1": "A",
-    "2-2": "T",
-    "2-3": "E",
-    "2-4": "Z",
+    "0-0": "V",
+    "0-1": "E",
+    "0-2": "S",
+    "0-3": "P",
+    "0-4": "A",
+    "1-0": "I",
+    "1-1": "X",
+    "1-2": "N",
+    "1-3": "A",
+    "1-4": "Y",
+    "2-0": "S",
+    "2-1": "T",
+    "2-2": "A",
+    "2-3": "T",
+    "2-4": "E",
     "3-0": "A",
-    "3-1": "P",
-    "3-2": "P",
-    "3-3": "L",
-    "3-4": "E",
-    "4-1": "P",
-    "4-2": "B",
+    "3-1": "R",
+    "3-2": "I",
+    "3-3": "E",
+    "3-4": "S",
+    "4-1": "A",
+    "4-2": "L",
     "4-3": "L",
   },
 };
 
 const Puzzel = () => {
   const inputRefs = useRef({});
-
+  const storedSetting = JSON.parse(localStorage.getItem("puzzelSetting"));
   const [answers, setAnswers] = useState({});
   const [focusedClue, setFocusedClue] = useState({
     row: 0,
@@ -103,13 +103,13 @@ const Puzzel = () => {
   const [isEndCellUpdated, setIsEndCellUpdated] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState(storedSetting ? storedSetting : {
     startOfWord: { backspaceIntoPreviousWord: true },
     withinWord: { skipFilledSquares: true, skipPenciledSquares: true },
     endOfWord: { jumpBackToFirstBlank: true, jumpToNextClue: false },
     interactions: { playSoundOnSolve: true, showTimer: true },
   });
-
+console.log(settings)
   const handleSaveSettings = () => {
     setShowSettings(false);
   };
@@ -122,6 +122,7 @@ const Puzzel = () => {
       interactions: { playSoundOnSolve: false, showTimer: true },
     });
     setShowSettings(false);
+    localStorage.removeItem("puzzelSetting")
   };
 
   // Puzzle solved check
@@ -172,7 +173,7 @@ const Puzzel = () => {
       !puzzleSolved &&
       !showRevealConfirmation &&
       !hasSeenCongrats &&
-      settings.interactions.showTimer
+      settings.interactions?.showTimer
     ) {
       interval = setInterval(() => {
         setTime((prevTime) => prevTime + 1);
@@ -187,7 +188,7 @@ const Puzzel = () => {
     puzzleSolved,
     showRevealConfirmation,
     hasSeenCongrats,
-    settings.interactions.showTimer,
+    settings.interactions?.showTimer,
   ]);
 
   const formatTime = (seconds) => {
@@ -554,43 +555,56 @@ const Puzzel = () => {
 
   const moveToNextCell = (row, col) => {
     if (direction === "across") {
-      // Check for end of word before incrementing
-      if (
-        col + 1 >= crosswordData.grid[row].length ||
-        (crosswordData.grid[row][col + 1] === null &&
-          col + 1 < crosswordData.grid[row].length)
-      ) {
-        // handleEndOfWord(row, col, direction);
-        setIsEndCellUpdated(true);
-        return;
-      }
-
-      let nextCol = col + 1;
-      if (crosswordData.grid[row][nextCol] !== null) {
-        if (!answers[`${row}-${nextCol}`]) {
-          setFocusedClue({ row: row, col: nextCol });
-          return;
+        let isWordComplete = true;
+        for (let c = 0; c < crosswordData.grid[row].length; c++) {
+            if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
+                isWordComplete = false;
+                break;
+            }
         }
-      }
+
+        if (isWordComplete) {
+            setIsEndCellUpdated(true);
+            return;
+        }
+
+        // Move to next column
+        let nextCol = col + 1;
+        if (nextCol >= crosswordData.grid[row].length || crosswordData.grid[row][nextCol] === null) {
+            setIsEndCellUpdated(true);
+            return;
+        }
+
+        if (crosswordData.grid[row][nextCol] !== null && !answers[`${row}-${nextCol}`]) {
+            setFocusedClue({ row: row, col: nextCol });
+            return;
+        }
     } else if (direction === "down") {
-      if (
-        row + 1 >= crosswordData.grid.length ||
-        (crosswordData.grid[row + 1][col] === null &&
-          row + 1 < crosswordData.grid.length)
-      ) {
-        setIsEndCellUpdated(true);
-        return;
-      }
-
-      let nextRow = row + 1;
-      if (crosswordData.grid[nextRow][col] !== null) {
-        if (!answers[`${nextRow}-${col}`]) {
-          setFocusedClue({ row: nextRow, col: col });
-          return;
+        let isWordComplete = true;
+        for (let r = 0; r < crosswordData.grid.length; r++) {
+            if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
+                isWordComplete = false;
+                break;
+            }
         }
-      }
+
+        if (isWordComplete) {
+            setIsEndCellUpdated(true);
+            return;
+        }
+
+        let nextRow = row + 1;
+        if (nextRow >= crosswordData.grid.length || crosswordData.grid[nextRow][col] === null) {
+            setIsEndCellUpdated(true);
+            return;
+        }
+
+        if (crosswordData.grid[nextRow][col] !== null && !answers[`${nextRow}-${col}`]) {
+            setFocusedClue({ row: nextRow, col: col });
+            return;
+        }
     }
-  };
+};
   useEffect(() => {
     if (isEndCellUpdated) {
       handleEndOfWord();
@@ -600,58 +614,72 @@ const Puzzel = () => {
   const handleEndOfWord = () => {
     const { row, col } = focusedClue;
     if (direction === "across") {
-      let hasBlanks = false;
-      let isWordComplete = true;
+        let hasBlanks = false;
+        let isWordComplete = true;
 
-      for (let c = 0; c < crosswordData.grid[row].length; c++) {
-        if (crosswordData.grid[row][c] !== null) {
-          if (!answers[`${row}-${c}`]) {
-            hasBlanks = true;
-            isWordComplete = false;
-          }
-        }
-      }
-      if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
         for (let c = 0; c < crosswordData.grid[row].length; c++) {
-          if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
-            setFocusedClue({ row: row, col: c });
-            return;
-          }
+            if (crosswordData.grid[row][c] !== null) {
+                if (!answers[`${row}-${c}`]) {
+                    hasBlanks = true;
+                    isWordComplete = false;
+                }
+            }
         }
-      }
+        if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
+            for (let c = 0; c < crosswordData.grid[row].length; c++) {
+                if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
+                    setFocusedClue({ row: row, col: c });
+                    return;
+                }
+            }
+        }
 
-      if (isWordComplete && settings.endOfWord.jumpToNextClue) {
-        handleClueNavigation(1);
-        return;
-      }
+        if (isWordComplete && settings.endOfWord.jumpToNextClue) {
+            handleClueNavigation(1);
+            return;
+        } else if (isWordComplete === false && settings.endOfWord.jumpToNextClue){
+            for (let c = 0; c < crosswordData.grid[row].length; c++){
+                if(crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]){
+                    setFocusedClue({row:row, col:c});
+                    return;
+                }
+            }
+        }
     } else if (direction === "down") {
-      let hasBlanks = false;
-      let isWordComplete = true;
+        let hasBlanks = false;
+        let isWordComplete = true;
 
-      for (let r = 0; r < crosswordData.grid.length; r++) {
-        if (crosswordData.grid[r][col] !== null) {
-          if (!answers[`${r}-${col}`]) {
-            hasBlanks = true;
-            isWordComplete = false;
-          }
-        }
-      }
-
-      if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
         for (let r = 0; r < crosswordData.grid.length; r++) {
-          if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
-            setFocusedClue({ row: r, col: col });
-            return;
-          }
+            if (crosswordData.grid[r][col] !== null) {
+                if (!answers[`${r}-${col}`]) {
+                    hasBlanks = true;
+                    isWordComplete = false;
+                }
+            }
         }
-      }
 
-      if (isWordComplete && settings.endOfWord.jumpToNextClue) {
-        handleClueNavigation(1);
-        return;
-      }
+        if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
+            for (let r = 0; r < crosswordData.grid.length; r++) {
+                if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
+                    setFocusedClue({ row: r, col: col });
+                    return;
+                }
+            }
+        }
+
+        if (isWordComplete && settings.endOfWord.jumpToNextClue) {
+            handleClueNavigation(1);
+            return;
+        } else if (isWordComplete === false && settings.endOfWord.jumpToNextClue){
+            for (let r = 0; r < crosswordData.grid.length; r++){
+                if(crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]){
+                    setFocusedClue({row:r, col:col});
+                    return;
+                }
+            }
+        }
     }
-  };
+};
 
   const moveToPreviousCell = (row, col) => {
     let prevRow = row;
@@ -701,6 +729,7 @@ const Puzzel = () => {
 
   const onResetButtonClick = () => {
     setShowResetConfirmation(!showResetConfirmation);
+    localStorage.removeItem("puzzelSetting");
   };
   const onRevealButtonClick = () => {
     setShowRevealConfirmation(!showRevealConfirmation);
@@ -756,7 +785,7 @@ const Puzzel = () => {
       >
         <nav className="d-flex py-2 px-3 mb-lg-5 mb-3 justify-content-between border-bottom">
           <div className="w-auto">
-            {settings.interactions.showTimer && (
+            {settings?.interactions?.showTimer && (
               <>
                 <button
                   className="bg-transparent p-0 me-1"

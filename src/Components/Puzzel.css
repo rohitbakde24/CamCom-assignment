@@ -5,7 +5,7 @@
   display: block;
 }
 .puzzel-section{
-    width: 750px;
+    width: 580px;
     display: flex;
     justify-content: center;
     table, th, td {
@@ -32,7 +32,7 @@
 .clue-section-sm{  
     display: none;
 }
-@media screen and (max-width: 680px) {
+@media screen and (max-width: 780px) {
     /* .puzzel-section-sm{
         background-color: brown;
     } */

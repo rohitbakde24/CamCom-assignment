@@ -99,6 +99,7 @@
 
   .blur-content{
     opacity: .5;
+    pointer-events: none;
     
   }
 
@@ -118,7 +119,7 @@
   }
   
   .dropdown-item{
-    padding: 4px 10px !important;
+    padding: 6px  10px !important;
   }
 
   .dropdown-menu{

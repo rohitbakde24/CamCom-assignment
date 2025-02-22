@@ -37,7 +37,11 @@ const crosswordData = {
     across: {
       1: { clue: 'Scooter seen in "Roman Holiday"', row: 0, col: 0 },
       6: { clue: "No, in pig Latin", row: 1, col: 0 },
-      7: { clue: '"The First____" (pharse on Delaware license Plates)', row: 2, col: 0 },
+      7: {
+        clue: '"The First____" (pharse on Delaware license Plates)',
+        row: 2,
+        col: 0,
+      },
       8: { clue: "Zodiac ram", row: 3, col: 0 },
       9: { clue: "Each and every one", row: 4, col: 1 },
     },
@@ -103,13 +107,17 @@ const Puzzel = () => {
   const [isEndCellUpdated, setIsEndCellUpdated] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState(storedSetting ? storedSetting : {
-    startOfWord: { backspaceIntoPreviousWord: true },
-    withinWord: { skipFilledSquares: true, skipPenciledSquares: true },
-    endOfWord: { jumpBackToFirstBlank: true, jumpToNextClue: false },
-    interactions: { playSoundOnSolve: true, showTimer: true },
-  });
-console.log(settings)
+  const [settings, setSettings] = useState(
+    storedSetting
+      ? storedSetting
+      : {
+          startOfWord: { backspaceIntoPreviousWord: true },
+          withinWord: { skipFilledSquares: true, skipPenciledSquares: true },
+          endOfWord: { jumpBackToFirstBlank: true, jumpToNextClue: false },
+          interactions: { playSoundOnSolve: true, showTimer: true },
+        }
+  );
+  console.log(settings);
   const handleSaveSettings = () => {
     setShowSettings(false);
   };
@@ -122,7 +130,7 @@ console.log(settings)
       interactions: { playSoundOnSolve: false, showTimer: true },
     });
     setShowSettings(false);
-    localStorage.removeItem("puzzelSetting")
+    localStorage.removeItem("puzzelSetting");
   };
 
   // Puzzle solved check
@@ -235,6 +243,14 @@ console.log(settings)
   const handleClueClick = (row, col, dir) => {
     setFocusedClue({ row, col });
     setDirection(dir);
+    const newIndex = allClues.findIndex(
+      ([, clueObj, clueDirection]) =>
+        clueObj.row === row && clueObj.col === col && clueDirection === dir
+    );
+  
+    if (newIndex !== -1) {
+      setCurrentClueIndex(newIndex);
+    }
   };
 
   const handleCellClick = (row, col) => {
@@ -288,7 +304,6 @@ console.log(settings)
           return newDirection;
         });
       } else {
-        // Keep the same direction when selecting a new cell
         setFocusedClue({ row, col });
 
         let clueNumber = null;
@@ -345,7 +360,6 @@ console.log(settings)
     setDirection(clueDir);
   };
   useEffect(() => {
-    // Focus on the first available input field when the component mounts
     const firstKey = Object.keys(crosswordData.numbers)[0];
     if (inputRefs.current[firstKey]) {
       inputRefs.current[firstKey].focus();
@@ -356,7 +370,6 @@ console.log(settings)
     }
   }, []);
 
-  // ✅ Check Only Selected Row (Supports Across & Down)
   const handleCheckSelectedRow = () => {
     if (selectedRow === null || selectedCol === null) return;
 
@@ -381,7 +394,6 @@ console.log(settings)
     setWrongAnswers(updatedWrongAnswers);
   };
 
-  // ✅ Check Whole Puzzle
   const handleCheckPuzzle = () => {
     const updatedWrongAnswers = {};
 
@@ -397,7 +409,6 @@ console.log(settings)
     setWrongAnswers(updatedWrongAnswers);
   };
 
-  // ✅ Clear Only Selected Row (Supports Across & Down)
   const handleClearSelectedRow = () => {
     if (selectedRow === null || selectedCol === null) return;
 
@@ -425,22 +436,20 @@ console.log(settings)
     setWrongAnswers(updatedWrongAnswers);
   };
 
-  // ✅ Clear Entire Puzzle
   const handleClearPuzzle = () => {
     setAnswers((prev) => {
       const updatedAnswers = {};
 
-      // Preserve revealed answers
       Object.keys(prev).forEach((key) => {
         if (revealedAnswers[key]) {
-          updatedAnswers[key] = prev[key]; // Keep revealed letters
+          updatedAnswers[key] = prev[key];
         }
       });
 
       return updatedAnswers;
     });
 
-    setWrongAnswers({}); // Clear wrong answers
+    setWrongAnswers({});
   };
 
   const handleRestart = () => {
@@ -469,8 +478,8 @@ console.log(settings)
     crosswordData.grid.forEach((row, rowIndex) => {
       row.forEach((letter, colIndex) => {
         const key = `${rowIndex}-${colIndex}`;
-        updatedAnswers[key] = letter; // Fill correct letter
-        updatedRevealed[key] = true; // Mark as revealed
+        updatedAnswers[key] = letter; 
+        updatedRevealed[key] = true;
       });
     });
 
@@ -515,19 +524,18 @@ console.log(settings)
   };
 
   const handleKeyInput = (key) => {
-    if (!focusedClue) return; // No cell selected
+    if (!focusedClue) return; 
 
     const { row, col } = focusedClue;
     const keyPosition = `${row}-${col}`;
     const upperKey = key.toUpperCase();
 
-    // Check if the cell is revealed or already has a value
     const isRevealed = revealedAnswers[keyPosition];
     const alreadyFilled = answers[keyPosition];
 
     if (/^[A-Z]$/.test(upperKey)) {
       if (isRevealed || alreadyFilled) {
-        moveToNextCell(row, col); // Move forward but do not change value
+        moveToNextCell(row, col);
         return;
       }
 
@@ -542,8 +550,7 @@ console.log(settings)
     } else if (key === "Backspace" || key === "⌫") {
       setAnswers((prev) => {
         moveToPreviousCell(row, col);
-        return isRevealed ? prev : { ...prev, [keyPosition]: "" }; // Only clear if not revealed
-      });
+        return isRevealed ? prev : { ...prev, [keyPosition]: "" }; });
     }
   };
 
@@ -551,60 +558,71 @@ console.log(settings)
     const handleKeyPress = (e) => handleKeyInput(e.key);
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [focusedClue, answers, direction]); // Removed `answers` dependency
+  }, [focusedClue, answers, direction]);
 
   const moveToNextCell = (row, col) => {
     if (direction === "across") {
-        let isWordComplete = true;
-        for (let c = 0; c < crosswordData.grid[row].length; c++) {
-            if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
-                isWordComplete = false;
-                break;
-            }
+      let isWordComplete = true;
+      for (let c = 0; c < crosswordData.grid[row].length; c++) {
+        if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
+          isWordComplete = false;
+          break;
         }
+      }
 
-        if (isWordComplete) {
-            setIsEndCellUpdated(true);
-            return;
-        }
+      if (isWordComplete) {
+        setIsEndCellUpdated(true);
+        return;
+      }
 
-        // Move to next column
-        let nextCol = col + 1;
-        if (nextCol >= crosswordData.grid[row].length || crosswordData.grid[row][nextCol] === null) {
-            setIsEndCellUpdated(true);
-            return;
-        }
+      let nextCol = col + 1;
+      if (
+        nextCol >= crosswordData.grid[row].length ||
+        crosswordData.grid[row][nextCol] === null
+      ) {
+        setIsEndCellUpdated(true);
+        return;
+      }
 
-        if (crosswordData.grid[row][nextCol] !== null && !answers[`${row}-${nextCol}`]) {
-            setFocusedClue({ row: row, col: nextCol });
-            return;
-        }
+      if (
+        crosswordData.grid[row][nextCol] !== null &&
+        !answers[`${row}-${nextCol}`]
+      ) {
+        setFocusedClue({ row: row, col: nextCol });
+        return;
+      }
     } else if (direction === "down") {
-        let isWordComplete = true;
-        for (let r = 0; r < crosswordData.grid.length; r++) {
-            if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
-                isWordComplete = false;
-                break;
-            }
+      let isWordComplete = true;
+      for (let r = 0; r < crosswordData.grid.length; r++) {
+        if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
+          isWordComplete = false;
+          break;
         }
+      }
 
-        if (isWordComplete) {
-            setIsEndCellUpdated(true);
-            return;
-        }
+      if (isWordComplete) {
+        setIsEndCellUpdated(true);
+        return;
+      }
 
-        let nextRow = row + 1;
-        if (nextRow >= crosswordData.grid.length || crosswordData.grid[nextRow][col] === null) {
-            setIsEndCellUpdated(true);
-            return;
-        }
+      let nextRow = row + 1;
+      if (
+        nextRow >= crosswordData.grid.length ||
+        crosswordData.grid[nextRow][col] === null
+      ) {
+        setIsEndCellUpdated(true);
+        return;
+      }
 
-        if (crosswordData.grid[nextRow][col] !== null && !answers[`${nextRow}-${col}`]) {
-            setFocusedClue({ row: nextRow, col: col });
-            return;
-        }
+      if (
+        crosswordData.grid[nextRow][col] !== null &&
+        !answers[`${nextRow}-${col}`]
+      ) {
+        setFocusedClue({ row: nextRow, col: col });
+        return;
+      }
     }
-};
+  };
   useEffect(() => {
     if (isEndCellUpdated) {
       handleEndOfWord();
@@ -614,72 +632,78 @@ console.log(settings)
   const handleEndOfWord = () => {
     const { row, col } = focusedClue;
     if (direction === "across") {
-        let hasBlanks = false;
-        let isWordComplete = true;
+      let hasBlanks = false;
+      let isWordComplete = true;
 
+      for (let c = 0; c < crosswordData.grid[row].length; c++) {
+        if (crosswordData.grid[row][c] !== null) {
+          if (!answers[`${row}-${c}`]) {
+            hasBlanks = true;
+            isWordComplete = false;
+          }
+        }
+      }
+      if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
         for (let c = 0; c < crosswordData.grid[row].length; c++) {
-            if (crosswordData.grid[row][c] !== null) {
-                if (!answers[`${row}-${c}`]) {
-                    hasBlanks = true;
-                    isWordComplete = false;
-                }
-            }
-        }
-        if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
-            for (let c = 0; c < crosswordData.grid[row].length; c++) {
-                if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
-                    setFocusedClue({ row: row, col: c });
-                    return;
-                }
-            }
-        }
-
-        if (isWordComplete && settings.endOfWord.jumpToNextClue) {
-            handleClueNavigation(1);
+          if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
+            setFocusedClue({ row: row, col: c });
             return;
-        } else if (isWordComplete === false && settings.endOfWord.jumpToNextClue){
-            for (let c = 0; c < crosswordData.grid[row].length; c++){
-                if(crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]){
-                    setFocusedClue({row:row, col:c});
-                    return;
-                }
-            }
+          }
         }
+      }
+
+      if (isWordComplete && settings.endOfWord.jumpToNextClue) {
+        handleClueNavigation(1);
+        return;
+      } else if (
+        isWordComplete === false &&
+        settings.endOfWord.jumpToNextClue
+      ) {
+        for (let c = 0; c < crosswordData.grid[row].length; c++) {
+          if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
+            setFocusedClue({ row: row, col: c });
+            return;
+          }
+        }
+      }
     } else if (direction === "down") {
-        let hasBlanks = false;
-        let isWordComplete = true;
+      let hasBlanks = false;
+      let isWordComplete = true;
 
+      for (let r = 0; r < crosswordData.grid.length; r++) {
+        if (crosswordData.grid[r][col] !== null) {
+          if (!answers[`${r}-${col}`]) {
+            hasBlanks = true;
+            isWordComplete = false;
+          }
+        }
+      }
+
+      if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
         for (let r = 0; r < crosswordData.grid.length; r++) {
-            if (crosswordData.grid[r][col] !== null) {
-                if (!answers[`${r}-${col}`]) {
-                    hasBlanks = true;
-                    isWordComplete = false;
-                }
-            }
-        }
-
-        if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
-            for (let r = 0; r < crosswordData.grid.length; r++) {
-                if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
-                    setFocusedClue({ row: r, col: col });
-                    return;
-                }
-            }
-        }
-
-        if (isWordComplete && settings.endOfWord.jumpToNextClue) {
-            handleClueNavigation(1);
+          if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
+            setFocusedClue({ row: r, col: col });
             return;
-        } else if (isWordComplete === false && settings.endOfWord.jumpToNextClue){
-            for (let r = 0; r < crosswordData.grid.length; r++){
-                if(crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]){
-                    setFocusedClue({row:r, col:col});
-                    return;
-                }
-            }
+          }
         }
+      }
+
+      if (isWordComplete && settings.endOfWord.jumpToNextClue) {
+        handleClueNavigation(1);
+        return;
+      } else if (
+        isWordComplete === false &&
+        settings.endOfWord.jumpToNextClue
+      ) {
+        for (let r = 0; r < crosswordData.grid.length; r++) {
+          if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
+            setFocusedClue({ row: r, col: col });
+            return;
+          }
+        }
+      }
     }
-};
+  };
 
   const moveToPreviousCell = (row, col) => {
     let prevRow = row;
@@ -791,7 +815,7 @@ console.log(settings)
                   className="bg-transparent p-0 me-1"
                   onClick={() => setIsRunning(!isRunning)}
                 >
-                  <img src={stopIcon} alt="stop" width={22} />
+                  <img src={stopIcon} alt="stop" width={18} className="stop-icon-pad"/>
                 </button>
                 <span className="fw-bold mt-1">{formatTime(time)}</span>
               </>
@@ -821,7 +845,7 @@ console.log(settings)
                 data-bs-toggle={"dropdown"}
                 aria-expanded="false"
               >
-                <img src={MoreIcon} alt="More" width={18} />
+                <img src={MoreIcon} alt="More" width={22} />
               </button>
               <ul
                 className="dropdown-menu py-1"
@@ -906,10 +930,10 @@ console.log(settings)
           </div>
         </nav>
         <div className="d-flex justify-content-center">
-          <div className={`container`}>
+          <div className={`container puzzel-container`}>
             <div className="row  d-flex justify-content-center">
               <div className="col-auto px-0 ">
-                <div className="puzzel-section">
+                <div className="puzzel-section overflow-auto">
                   <table>
                     <tbody>
                       {crosswordData.grid.map((row, rowIndex) => (
@@ -964,7 +988,7 @@ console.log(settings)
                                     type="text"
                                     maxLength="1"
                                     value={answers[key] || ""}
-                                    readOnly // Make it non-focusable
+                                    readOnly 
                                     className={`text-center custom-input ${
                                       wrongAnswers[key] && answers[key]
                                         ? "wrong-char"
@@ -1029,13 +1053,9 @@ console.log(settings)
                         <li
                           key={num}
                           style={{
-                            cursor: "pointer",
                             listStyle: "none",
-                            background: isSelected ? "#a4dbfb" : "transparent", // Highlight selected clue
-                            // fontWeight: isSelected ? "bold" : "normal", // Make it bold when selected
                             padding: "2px 5px",
-                            borderRadius: "4px",
-                          }}
+                            }}
                           onClick={() =>
                             handleClueClick(
                               clueData.row,
@@ -1044,7 +1064,13 @@ console.log(settings)
                             )
                           }
                         >
+                          <span style={{
+                             padding: "2px 5px",
+                             borderRadius: "4px",
+                             cursor: "pointer",
+                             background: clueData.clue === allClues[currentClueIndex][1].clue ? "#a4dbfb":"none"}}>
                           <strong>{num}:</strong> {clueData.clue}
+                          </span>
                         </li>
                       );
                     }
@@ -1064,18 +1090,20 @@ console.log(settings)
                         <li
                           key={num}
                           style={{
-                            cursor: "pointer",
                             listStyle: "none",
-                            background: isSelected ? "#a4dbfb" : "transparent", // Highlight selected clue
-                            // fontWeight: isSelected ? "bold" : "normal",
                             padding: "2px 5px",
-                            borderRadius: "4px",
                           }}
                           onClick={() =>
                             handleClueClick(clueData.row, clueData.col, "down")
                           }
                         >
+                         <span style={{
+                             padding: "2px 5px",
+                             borderRadius: "4px",
+                             cursor: "pointer",
+                             background: clueData.clue === allClues[currentClueIndex][1].clue ? "#a4dbfb":"none"}}>
                           <strong>{num}:</strong> {clueData.clue}
+                          </span>
                         </li>
                       );
                     }

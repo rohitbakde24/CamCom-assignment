@@ -70,3 +70,7 @@
     font-weight: bolder;
     margin: 0px !important;
   }
+
+  .stop-icon-pad{
+    padding: 0px 2px 3px 0px;
+  }

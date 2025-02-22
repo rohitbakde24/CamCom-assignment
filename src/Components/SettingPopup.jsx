@@ -16,12 +16,12 @@ const SettingsPopup = ({ onClose, onSave, onRestoreDefaults, settings, setSettin
 
 
     return (
-        <div className="settings-popup">
-            <div className="px-4">
+        <div className="settings-popup ">
+            <div className="px-4 ">
                 <div className="d-flex justify-content-end">
-             <button className="btn btn-tranparent pt-3" onClick={onClose}><img src={CloseIcon} width={22}/></button>
+             <button className="btn btn-tranparent pt-3 position-absolute end-0" onClick={onClose}><img src={CloseIcon} width={22}/></button>
              </div>
-                <h2 className="fw-bolder">Puzzle Settings</h2>
+                <h2 className="fw-bolder pt-5">Puzzle Settings</h2>
 
                 <div className="section pt-3">
                     <h5 className="setting-title">At the start of a word</h5>

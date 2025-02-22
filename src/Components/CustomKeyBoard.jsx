@@ -10,7 +10,7 @@ const CustomKeyBoard = ({ onKeyPress }) => {
         {keys.map((key) => (
           <button
             key={key}
-            className="key"
+            className={key === "⌫" ? "back-key key":"key"}
             onClick={() => onKeyPress(key)}
           >
             {key}

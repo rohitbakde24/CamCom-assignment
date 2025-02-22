@@ -56,40 +56,6 @@
 
 
 
-.keyboard {
-    
-    width: 100%;
-    background: #e7ebee;
-    display: flex;
-    flex-wrap: wrap;
-    padding: 10px 10px 18px 10px;
-    justify-content: center;
-  }
-  
-  .key {
-    width: 8%;
-    height: 40px;
-    width: 40px;
-    font-size: 1.2rem;
-    margin: 4px;
-    border: none;
-    border-radius: 5px;
-    background: #ffffff;
-    cursor: pointer;
-    color: #000 !important;
-    padding: 0px;
-  }
-  
-  .key:active {
-    background: #bbb;
-  }
-
-  .back-key{
-    background: #c7c7c7 !important;
-    height: 40px !important;
-    width: 45px !important;
-  }
-
   .clue-text-bg{
     background-color: #a4dbfb;
     padding: 7px;

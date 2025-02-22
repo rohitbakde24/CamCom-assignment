@@ -1,12 +1,10 @@
-import { useState } from 'react'
-import './App.css'
-import Puzzel from './Components/Puzzel'
-import './style.css'
+import { useState } from 'react';
+import './style.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
+import Puzzel from './Pages/Puzzel';
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Puzzel.css";
-import CustomKeyBoard from "./CustomKeyBoard";
+import CustomKeyBoard from "../Components/CustomKeyBoard";
 import {
   arrowBack,
   arrowNext,
@@ -9,10 +9,10 @@ import {
   SettingIcon,
   stopIcon,
 } from "../assets/base64";
-import Overlay from "./Overlay";
-import ConfirmationBox from "./ConfirmationBox";
-import CongratsPopup from "./CongratsPopup";
-import SettingsPopup from "./SettingPopup";
+import Overlay from "../Components/Overlay";
+import ConfirmationBox from "../Components/ConfirmationBox";
+import CongratsPopup from "../Components/CongratsPopup";
+import SettingsPopup from "../Components/SettingPopup";
 
 const crosswordData = {
   grid: [

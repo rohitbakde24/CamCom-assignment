@@ -503,7 +503,7 @@ const Puzzel = () => {
           (direction === "across" && rowIndex === selectedRow) ||
           (direction === "down" && colIndex === selectedCol)
         ) {
-          updatedAnswers[key] = letter; // Fill correct letter
+          updatedAnswers[key] = letter;
           updatedRevealed[key] = true; // Mark as revealed
           delete updatedWrongAnswers[key]; // Remove wrong marking
         }
@@ -629,6 +629,7 @@ const Puzzel = () => {
       setIsEndCellUpdated(false);
     }
   }, [isEndCellUpdated]);
+  
   const handleEndOfWord = () => {
     const { row, col } = focusedClue;
     if (direction === "across") {

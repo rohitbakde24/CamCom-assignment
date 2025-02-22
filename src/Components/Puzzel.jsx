@@ -100,6 +100,7 @@ const Puzzel = () => {
   const [showRevealConfirmation, setShowRevealConfirmation] = useState(false);
   const [puzzleSolved, setPuzzleSolved] = useState(false);
   const [hasSeenCongrats, setHasSeenCongrats] = useState(false);
+  const [isEndCellUpdated, setIsEndCellUpdated] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState({
@@ -145,9 +146,9 @@ const Puzzel = () => {
       setIsRunning(false);
       setHasSeenCongrats(true);
       if (settings.interactions.playSoundOnSolve) {
-        const audio = new Audio('/congrats.wav');
+        const audio = new Audio("/congrats.wav");
         audio.play();
-    }
+      }
     }
   }, [answers]);
 
@@ -552,36 +553,102 @@ const Puzzel = () => {
   }, [focusedClue, answers, direction]); // Removed `answers` dependency
 
   const moveToNextCell = (row, col) => {
-    let nextRow = row;
-    let nextCol = col;
-
     if (direction === "across") {
-      nextCol++; // Move right
-    } else if (direction === "down") {
-      nextRow++; // Move down
-    }
+      // Check for end of word before incrementing
+      if (
+        col + 1 >= crosswordData.grid[row].length ||
+        (crosswordData.grid[row][col + 1] === null &&
+          col + 1 < crosswordData.grid[row].length)
+      ) {
+        // handleEndOfWord(row, col, direction);
+        setIsEndCellUpdated(true);
+        return;
+      }
 
-    while (
-      nextRow < crosswordData.grid.length &&
-      nextCol < crosswordData.grid[nextRow].length
-    ) {
-      if (crosswordData.grid[nextRow][nextCol] !== null) {
-        if (!answers[`${nextRow}-${nextCol}`]) {
-          setFocusedClue({ row: nextRow, col: nextCol });
+      let nextCol = col + 1;
+      if (crosswordData.grid[row][nextCol] !== null) {
+        if (!answers[`${row}-${nextCol}`]) {
+          setFocusedClue({ row: row, col: nextCol });
           return;
         }
       }
+    } else if (direction === "down") {
+      if (
+        row + 1 >= crosswordData.grid.length ||
+        (crosswordData.grid[row + 1][col] === null &&
+          row + 1 < crosswordData.grid.length)
+      ) {
+        setIsEndCellUpdated(true);
+        return;
+      }
 
-      // Skip black or filled cells
-      if (direction === "across") {
-        nextCol++;
-        if (nextCol >= crosswordData.grid[row].length) {
-          nextRow++;
-          nextCol = 0;
+      let nextRow = row + 1;
+      if (crosswordData.grid[nextRow][col] !== null) {
+        if (!answers[`${nextRow}-${col}`]) {
+          setFocusedClue({ row: nextRow, col: col });
+          return;
         }
-      } else if (direction === "down") {
-        nextRow++;
-        if (nextRow >= crosswordData.grid.length) return;
+      }
+    }
+  };
+  useEffect(() => {
+    if (isEndCellUpdated) {
+      handleEndOfWord();
+      setIsEndCellUpdated(false);
+    }
+  }, [isEndCellUpdated]);
+  const handleEndOfWord = () => {
+    const { row, col } = focusedClue;
+    if (direction === "across") {
+      let hasBlanks = false;
+      let isWordComplete = true;
+
+      for (let c = 0; c < crosswordData.grid[row].length; c++) {
+        if (crosswordData.grid[row][c] !== null) {
+          if (!answers[`${row}-${c}`]) {
+            hasBlanks = true;
+            isWordComplete = false;
+          }
+        }
+      }
+      if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
+        for (let c = 0; c < crosswordData.grid[row].length; c++) {
+          if (crosswordData.grid[row][c] !== null && !answers[`${row}-${c}`]) {
+            setFocusedClue({ row: row, col: c });
+            return;
+          }
+        }
+      }
+
+      if (isWordComplete && settings.endOfWord.jumpToNextClue) {
+        handleClueNavigation(1);
+        return;
+      }
+    } else if (direction === "down") {
+      let hasBlanks = false;
+      let isWordComplete = true;
+
+      for (let r = 0; r < crosswordData.grid.length; r++) {
+        if (crosswordData.grid[r][col] !== null) {
+          if (!answers[`${r}-${col}`]) {
+            hasBlanks = true;
+            isWordComplete = false;
+          }
+        }
+      }
+
+      if (hasBlanks && settings.endOfWord.jumpBackToFirstBlank) {
+        for (let r = 0; r < crosswordData.grid.length; r++) {
+          if (crosswordData.grid[r][col] !== null && !answers[`${r}-${col}`]) {
+            setFocusedClue({ row: r, col: col });
+            return;
+          }
+        }
+      }
+
+      if (isWordComplete && settings.endOfWord.jumpToNextClue) {
+        handleClueNavigation(1);
+        return;
       }
     }
   };
@@ -682,7 +749,8 @@ const Puzzel = () => {
         className={`${
           ((!isRunning && !hasSeenCongrats) ||
             showSettings ||
-            showResetConfirmation || showRevealConfirmation) &&
+            showResetConfirmation ||
+            showRevealConfirmation) &&
           "blur-content"
         }`}
       >

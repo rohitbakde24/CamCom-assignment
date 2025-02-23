@@ -796,13 +796,13 @@ const Puzzel = () => {
   const moveToPreviousCell = (row, col) => {
     let prevRow = row;
     let prevCol = col;
-
+  
     if (direction === "across") {
       prevCol--;
     } else if (direction === "down") {
       prevRow--;
     }
-
+  
     while (true) {
       if (prevRow < 0 || prevCol < 0) {
         if (direction === "across") {
@@ -821,16 +821,54 @@ const Puzzel = () => {
           }
         }
       }
-
+  
       if (
         prevRow >= 0 &&
         prevCol >= 0 &&
         crosswordData.grid[prevRow][prevCol] !== null
       ) {
         setFocusedClue({ row: prevRow, col: prevCol });
+  
+        // Update currentClueIndex
+        const newClueIndex = allClues.findIndex(
+          ([num, clueData, clueDirection]) => {
+            if (clueDirection === "across") {
+              // Find the starting col of the word
+              let startCol = prevCol;
+              while(startCol >= 0 && crosswordData.grid[prevRow][startCol] !== null){
+                startCol--;
+              }
+              startCol++;
+  
+              return (
+                clueDirection === "across" &&
+                crosswordData.clues.across[num].row === prevRow &&
+                crosswordData.clues.across[num].col === startCol
+              );
+            } else if (clueDirection === "down") {
+              // Find the starting row of the word
+              let startRow = prevRow;
+              while(startRow >= 0 && crosswordData.grid[startRow][prevCol] !== null){
+                startRow--;
+              }
+              startRow++;
+              return (
+                clueDirection === "down" &&
+                crosswordData.clues.down[num].row === startRow &&
+                crosswordData.clues.down[num].col === prevCol
+              );
+            }
+            return false;
+          }
+        );
+  
+        if (newClueIndex !== -1) {
+          setCurrentClueIndex(newClueIndex);
+        }
+  
         break;
       }
-
+  
       if (direction === "across") {
         prevCol--;
       } else if (direction === "down") {
@@ -1122,10 +1160,7 @@ const Puzzel = () => {
                 <ul>
                   {Object.entries(crosswordData.clues?.across).map(
                     ([num, clueData]) => {
-                      const isSelected =
-                        focusedClue?.row === clueData.row &&
-                        focusedClue?.col === clueData.col &&
-                        direction === "across";
+                     
 
                       return (
                         <li
@@ -1159,11 +1194,6 @@ const Puzzel = () => {
                 <ul>
                   {Object.entries(crosswordData.clues?.down).map(
                     ([num, clueData]) => {
-                      const isSelected =
-                        focusedClue?.row === clueData.row &&
-                        focusedClue?.col === clueData.col &&
-                        direction === "down";
-
                       return (
                         <li
                           key={num}

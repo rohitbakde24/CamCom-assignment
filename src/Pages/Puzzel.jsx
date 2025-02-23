@@ -377,7 +377,7 @@ const Puzzel = () => {
 
     const updatedWrongAnswers = { ...wrongAnswers };
 
-    crosswordData.grid.forEach((row, rowIndex) => {
+    crosswordData.grid?.forEach((row, rowIndex) => {
       row.forEach((letter, colIndex) => {
         const key = `${rowIndex}-${colIndex}`;
         if (
@@ -412,28 +412,51 @@ const Puzzel = () => {
   };
 
   const handleClearSelectedRow = () => {
-    if (selectedRow === null || selectedCol === null) return;
-
+    if (focusedClue === null) return;
+  
+    const { row: focusedRow, col: focusedCol } = focusedClue;
     const updatedAnswers = { ...answers };
     const updatedWrongAnswers = { ...wrongAnswers };
-
-    crosswordData.grid.forEach((row, rowIndex) => {
-      row.forEach((_, colIndex) => {
-        const key = `${rowIndex}-${colIndex}`;
-
-        if (
-          (direction === "across" && rowIndex === selectedRow) ||
-          (direction === "down" && colIndex === selectedCol)
-        ) {
-          if (!revealedAnswers[key]) {
-            // Skip revealed values
-            delete updatedAnswers[key];
-            delete updatedWrongAnswers[key];
-          }
+  
+    if (direction === "across") {
+      let startCol = focusedCol;
+      while (startCol >= 0 && crosswordData.grid[focusedRow][startCol] !== null) {
+        startCol--;
+      }
+      startCol++;
+  
+      let currentCol = startCol;
+      while (
+        currentCol < crosswordData.grid[focusedRow].length &&
+        crosswordData.grid[focusedRow][currentCol] !== null
+      ) {
+        const key = `${focusedRow}-${currentCol}`;
+        if (!revealedAnswers[key]) {
+          delete updatedAnswers[key];
+          delete updatedWrongAnswers[key];
         }
-      });
-    });
-
+        currentCol++;
+      }
+    } else if (direction === "down") {
+      let startRow = focusedRow;
+      while (startRow >= 0 && crosswordData.grid[startRow][focusedCol] !== null) {
+        startRow--;
+      }
+      startRow++;
+  
+      let currentRow = startRow;
+      while (
+        currentRow < crosswordData.grid.length &&
+        crosswordData.grid[currentRow][focusedCol] !== null
+      ) {
+        const key = `${currentRow}-${focusedCol}`;
+        if (!revealedAnswers[key]) {
+          delete updatedAnswers[key];
+          delete updatedWrongAnswers[key];
+        }
+        currentRow++;
+      }
+    }
     setAnswers(updatedAnswers);
     setWrongAnswers(updatedWrongAnswers);
   };
@@ -513,7 +536,7 @@ const Puzzel = () => {
     });
 
     setAnswers(updatedAnswers);
-    setWrongAnswers(updatedWrongAnswers);
+        setWrongAnswers(updatedWrongAnswers);
     setRevealedAnswers(updatedRevealed);
   };
 
@@ -526,36 +549,43 @@ const Puzzel = () => {
   };
 
   const handleKeyInput = (key) => {
-    if (!focusedClue) return; 
-
+    if (!focusedClue) return;
+  
     const { row, col } = focusedClue;
     const keyPosition = `${row}-${col}`;
     const upperKey = key.toUpperCase();
-
+    const updatedWrongAnswers = { ...wrongAnswers };
+  
     const isRevealed = revealedAnswers[keyPosition];
     const alreadyFilled = answers[keyPosition];
-    debugger
+  
     if (/^[A-Z]$/.test(upperKey)) {
-      if (isRevealed || alreadyFilled) {
+      if (isRevealed) {
         moveToNextCell(row, col);
         return;
       }
-
+  
       if (autoCheck) {
         autoCheckOnValueChange(row, col, upperKey);
       }
       setAnswers((prev) => {
         const newAnswers = { ...prev, [keyPosition]: upperKey };
+  
+        if (crosswordData.grid[row][col] === upperKey) {
+          delete updatedWrongAnswers[keyPosition];
+          setWrongAnswers(updatedWrongAnswers);
+        }
+  
         moveToNextCell(row, col);
         return newAnswers;
       });
     } else if (key === "Backspace" || key === "⌫") {
       setAnswers((prev) => {
         moveToPreviousCell(row, col);
-        return isRevealed ? prev : { ...prev, [keyPosition]: "" }; });
+        return isRevealed ? prev : { ...prev, [keyPosition]: "" };
+      });
     }
   };
-
   useEffect(() => {
     const handleKeyPress = (e) => handleKeyInput(e.key);
     window.addEventListener("keydown", handleKeyPress);
@@ -1002,6 +1032,7 @@ const Puzzel = () => {
                             return (
                               <td
                                 key={colIndex}
+                                className="td-size"
                                 style={{
                                   
                                   background:

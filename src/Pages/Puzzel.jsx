@@ -127,7 +127,7 @@ const Puzzel = () => {
       startOfWord: { backspaceIntoPreviousWord: true },
       withinWord: { skipFilledSquares: true, skipPenciledSquares: true },
       endOfWord: { jumpBackToFirstBlank: true, jumpToNextClue: false },
-      interactions: { playSoundOnSolve: false, showTimer: true },
+      interactions: { playSoundOnSolve: true, showTimer: true },
     });
     setShowSettings(false);
     localStorage.removeItem("puzzelSetting");
@@ -155,7 +155,7 @@ const Puzzel = () => {
       setIsRunning(false);
       setHasSeenCongrats(true);
       if (settings.interactions.playSoundOnSolve) {
-        const audio = new Audio("/congrats.wav");
+        const audio = new Audio("/winning.mp3");
         audio.play();
       }
     }
@@ -169,6 +169,16 @@ const Puzzel = () => {
     setFinalTime(null);
     setIsRunning(true);
     setHasSeenCongrats(false);
+    setFocusedClue({
+      row:0,
+      col:0
+    })
+    setShowResetConfirmation(false);
+    setRevealedAnswers({})
+    setSelectedRow(0);
+    setSelectedCol(0);
+    setCurrentClueIndex(0);
+    setDirection("across");
   };
 
   const resetTimer = () => setTime(0);
@@ -256,14 +266,7 @@ const Puzzel = () => {
   const handleCellClick = (row, col) => {
     setSelectedRow(row);
     setSelectedCol(col);
-
-    if (
-      !isRunning ||
-      showResetConfirmation ||
-      showRevealConfirmation ||
-      showSettings
-    )
-      return;
+    
 
     if (crosswordData.grid[row][col] !== null) {
       if (focusedClue?.row === row && focusedClue?.col === col) {
@@ -467,8 +470,8 @@ const Puzzel = () => {
     setFinalTime(null);
     setPuzzleSolved(false);
     setHasSeenCongrats(false);
-    setCurrentClueIndex(0);
     setDirection("across");
+    setRevealedAnswers({})
   };
 
   const handleRevealWholePuzzle = () => {
@@ -532,7 +535,7 @@ const Puzzel = () => {
 
     const isRevealed = revealedAnswers[keyPosition];
     const alreadyFilled = answers[keyPosition];
-
+    debugger
     if (/^[A-Z]$/.test(upperKey)) {
       if (isRevealed || alreadyFilled) {
         moveToNextCell(row, col);
@@ -569,12 +572,12 @@ const Puzzel = () => {
           break;
         }
       }
-
+  
       if (isWordComplete) {
         setIsEndCellUpdated(true);
         return;
       }
-
+  
       let nextCol = col + 1;
       if (
         nextCol >= crosswordData.grid[row].length ||
@@ -583,11 +586,26 @@ const Puzzel = () => {
         setIsEndCellUpdated(true);
         return;
       }
-
-      if (
-        crosswordData.grid[row][nextCol] !== null &&
-        !answers[`${row}-${nextCol}`]
-      ) {
+  
+      if (settings.withinWord.skipFilledSquares) {
+        while (
+          nextCol < crosswordData.grid[row].length &&
+          crosswordData.grid[row][nextCol] !== null &&
+          answers[`${row}-${nextCol}`]
+        ) {
+          nextCol++;
+        }
+  
+        if (
+          nextCol >= crosswordData.grid[row].length ||
+          crosswordData.grid[row][nextCol] === null
+        ) {
+          setIsEndCellUpdated(true);
+          return;
+        }
+      }
+  
+      if (crosswordData.grid[row][nextCol] !== null) {
         setFocusedClue({ row: row, col: nextCol });
         return;
       }
@@ -599,12 +617,12 @@ const Puzzel = () => {
           break;
         }
       }
-
+  
       if (isWordComplete) {
         setIsEndCellUpdated(true);
         return;
       }
-
+  
       let nextRow = row + 1;
       if (
         nextRow >= crosswordData.grid.length ||
@@ -613,11 +631,26 @@ const Puzzel = () => {
         setIsEndCellUpdated(true);
         return;
       }
-
-      if (
-        crosswordData.grid[nextRow][col] !== null &&
-        !answers[`${nextRow}-${col}`]
-      ) {
+  
+      if (settings.withinWord.skipFilledSquares) {
+        while (
+          nextRow < crosswordData.grid.length &&
+          crosswordData.grid[nextRow][col] !== null &&
+          answers[`${nextRow}-${col}`]
+        ) {
+          nextRow++;
+        }
+  
+        if (
+          nextRow >= crosswordData.grid.length ||
+          crosswordData.grid[nextRow][col] === null
+        ) {
+          setIsEndCellUpdated(true);
+          return;
+        }
+      }
+  
+      if (crosswordData.grid[nextRow][col] !== null) {
         setFocusedClue({ row: nextRow, col: col });
         return;
       }
@@ -666,6 +699,18 @@ const Puzzel = () => {
             return;
           }
         }
+      }else{
+        let nextCol = col + 1;
+        if (nextCol < crosswordData.grid[row].length && crosswordData.grid[row][nextCol] !== null) {
+          setFocusedClue({ row: row, col: nextCol });
+        } else {
+          // Find the first cell of the current word
+          let firstCol = 0;
+          while (firstCol < crosswordData.grid[row].length && crosswordData.grid[row][firstCol] === null) {
+            firstCol++;
+          }
+          setFocusedClue({ row: row, col: firstCol });
+        }
       }
     } else if (direction === "down") {
       let hasBlanks = false;
@@ -702,6 +747,19 @@ const Puzzel = () => {
             return;
           }
         }
+      }else{
+        // Move to the next cell or the first cell of the word.
+      let nextRow = row + 1;
+      if (nextRow < crosswordData.grid.length && crosswordData.grid[nextRow][col] !== null) {
+        setFocusedClue({ row: nextRow, col: col });
+      } else {
+        // Find the first cell of the current word
+        let firstRow = 0;
+        while (firstRow < crosswordData.grid.length && crosswordData.grid[firstRow][col] === null) {
+          firstRow++;
+        }
+        setFocusedClue({ row: firstRow, col: col });
+      }
       }
     }
   };
@@ -726,9 +784,9 @@ const Puzzel = () => {
             break;
           }
         } else if (direction === "down") {
-          if (settings.startOfWord.backspaceIntoPreviousWord && row > 0) {
-            prevRow = crosswordData.grid.length - 1;
-            prevCol = col;
+          if (settings.startOfWord.backspaceIntoPreviousWord && col > 0) {
+            prevCol--;
+            prevRow = crosswordData.grid[prevCol]?.length - 1 || 0;
           } else {
             break;
           }
@@ -830,23 +888,23 @@ const Puzzel = () => {
             {hasSeenCongrats && (
               <div className="me-2 pe-1">
                 <button
-                  className={`btn btn-light p-1 pt-0 border-0`}
+                  className={`btn btn-transparant p-1 pt-0 border-0`}
                   type="button"
                   onClick={resetGame}
                 >
-                  <img src={ResetIcon} alt="Reset" width={18} />
+                  <img src={ResetIcon} alt="Reset" width={24} />
                 </button>
               </div>
             )}
             <div className="dropdown">
               <button
-                className={`btn btn-light p-1 pt-0 border-0`}
+                className={`btn btn-transparant p-1 pt-0 border-0`}
                 type="button"
                 id={"dropdownMenuButton"}
                 data-bs-toggle={"dropdown"}
                 aria-expanded="false"
               >
-                <img src={MoreIcon} alt="More" width={22} />
+                <img src={MoreIcon} alt="More" width={24} />
               </button>
               <ul
                 className="dropdown-menu py-1"
@@ -919,11 +977,11 @@ const Puzzel = () => {
               </ul>
             </div>
             <div className="ms-2 ps-1">
-              <button className="btn btn-light p-1 pt-0 border-0">
+              <button className="btn btn-transparant p-1 pt-0 border-0">
                 <img
                   src={SettingIcon}
                   alt="setting"
-                  width={22}
+                  width={24}
                   onClick={() => setShowSettings(true)}
                 />
               </button>
@@ -946,8 +1004,7 @@ const Puzzel = () => {
                               <td
                                 key={colIndex}
                                 style={{
-                                  width: "67px",
-                                  height: "65px",
+                                  
                                   background:
                                     cell === null
                                       ? "black"
@@ -990,25 +1047,15 @@ const Puzzel = () => {
                                     maxLength="1"
                                     value={answers[key] || ""}
                                     readOnly 
-                                    className={`text-center custom-input ${
+                                    className={`text-center boxes  ${
                                       wrongAnswers[key] && answers[key]
                                         ? "wrong-char"
                                         : ""
                                     }`}
                                     style={{
-                                      width: "65px",
-                                      height: "55px",
-                                      fontSize: "1.5rem",
-                                      textTransform: "uppercase",
-                                      border: "none",
-                                      outline: "none",
-                                      fontWeight: "bold",
-                                      textAlign: "center",
                                       color: revealedAnswers[key]
                                         ? "#0D92F4"
-                                        : "black",
-                                      // backgroundColor: focusedClue?.row === rowIndex && focusedClue?.col === colIndex ? "#ffda00" : "white",
-                                    }}
+                                        : "black", }}
                                   />
                                 )}
                               </td>

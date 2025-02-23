@@ -124,3 +124,35 @@
   overflow-y:auto;
   /* height: 270px; */
 }
+
+.boxes{
+  width: 65px;
+  height: 55px;
+  font-size: 24px;
+  text-transform: uppercase;
+  border: none;
+  outline: none;
+  font-weight: bold;
+  text-align: center;
+}
+.td-size{
+  width: 67px;
+  height: 65px;
+}
+@media screen and (max-width: 349px) {
+  .boxes{
+    width: 45px;
+    height: 40px;
+    font-size: 18px;
+    text-transform: uppercase;
+    border: none;
+    outline: none;
+    font-weight: bold;
+    text-align: center;
+  }
+  .td-size{
+    width: 53px;
+    height: 45px;
+  }
+}
+

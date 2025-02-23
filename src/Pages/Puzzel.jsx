@@ -117,7 +117,6 @@ const Puzzel = () => {
           interactions: { playSoundOnSolve: true, showTimer: true },
         }
   );
-  console.log(settings);
   const handleSaveSettings = () => {
     setShowSettings(false);
   };

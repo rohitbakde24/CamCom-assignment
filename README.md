@@ -1,8 +1,19 @@
-# React + Vite
+Puzzle App is an interactive and engaging application built using React 19 with Vite. The app challenges users with various puzzles to solve, enhancing their problem-solving skills and providing entertainment.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Installation
 
-Currently, two official plugins are available:
+Follow the steps below to set up the project locally:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Install dependencies: npm install
+
+Start the development server: npm run dev
+
+Features
+Interactive puzzle-solving experience
+Smooth UI/UX with responsive design
+Optimized performance using Vite
+
+Technologies Used
+React 19
+Vite (for fast development and build process)
+Bootstrap (for styling)
